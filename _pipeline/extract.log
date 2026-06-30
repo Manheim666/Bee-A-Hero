@@ -1,0 +1,11 @@
+[Mon Jun 29 01:21:41 AST 2026] extraction started
+[Mon Jun 29 01:21:41 AST 2026] free before train_mini: 344GB
+[Mon Jun 29 01:21:41 AST 2026] extracting train_mini.tar.gz
+[Mon Jun 29 01:27:36 AST 2026] done train_mini
+[Mon Jun 29 01:27:36 AST 2026] free before val: 309GB
+[Mon Jun 29 01:27:36 AST 2026] extracting val.tar.gz
+[Mon Jun 29 01:29:19 AST 2026] done val
+[Mon Jun 29 01:29:19 AST 2026] free before public_test: 300GB
+[Mon Jun 29 01:29:19 AST 2026] extracting public_test.tar.gz
+[Mon Jun 29 01:37:08 AST 2026] done public_test
+[Mon Jun 29 01:37:08 AST 2026] ALL EXTRACTION COMPLETE

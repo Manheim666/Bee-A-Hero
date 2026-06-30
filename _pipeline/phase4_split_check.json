@@ -1,0 +1,8 @@
+{
+  "train_species": 2526,
+  "val_species": 2526,
+  "species_only_in_train": 0,
+  "species_only_in_val": 0,
+  "train_images": 126300,
+  "val_images": 25260
+}
