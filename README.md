@@ -137,10 +137,10 @@ Containerized usage is supported via `Dockerfile` and `docker-compose.yml`.
 
 | Member             | Role |
 |--------------------|------|
-| **Asif Habilov**   | Team lead — planning & tasking. Also contributes to data research, ML engineering, computer vision, and QA. Leads research on **3D modeling, multi-camera fusion** (avoiding duplicate insect tracking), and the **count × type × time → pollination-rate** relations, including the optional **pollination → income** modeling. |
-| **Raul Ibrahimov** | Data research and ML engineering. |
-| **Narmin Dirayeva**| LLM and ML engineering. |
-| **Khaver**         | Data and LLM. |
+| **Asif Habilov**   | Team lead — overall planning and task coordination. Spans data research, ML engineering, computer vision, and QA, and drives the project's research direction on 3D modeling, multi-camera fusion, and pollination/income modeling. |
+| **Raul Ibrahimov** | Data research and ML engineering — dataset curation and preparation, model design, training, and evaluation for the detection and classification pipeline. |
+| **Narmin Dirayeva**| LLM and ML engineering — LLM-based reporting and prompt design, plus model development and evaluation alongside the core ML work. |
+| **Khaver**         | Data and LLM — data collection, annotation, and quality, supporting the LLM reporting and analysis components. |
 
 ---
 
