@@ -28,6 +28,29 @@ CLASSIFICATION = REPO / "data" / "processed" / "flower" / "classification"
 YOLO = REPO / "data" / "processed" / "flower" / "yolo"
 
 
+# import-name -> pip-name. Only what the flower scripts actually need.
+REQUIRED = {"cv2": "opencv-python", "numpy": "numpy"}
+
+
+def ensure_deps():
+    """Install any missing third-party deps so a fresh clone 'just works'."""
+    missing = []
+    for mod, pkg in REQUIRED.items():
+        try:
+            __import__(mod)
+        except ImportError:
+            missing.append(pkg)
+    if not missing:
+        return
+    print(f"installing missing packages: {' '.join(missing)}")
+    try:
+        subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", *missing],
+                       check=True)
+    except Exception:
+        sys.exit("!! could not auto-install dependencies. Install manually:\n"
+                 f"   {sys.executable} -m pip install {' '.join(missing)}")
+
+
 def run(label, cmd):
     print("\n" + "=" * 70 + f"\n{label}\n" + "=" * 70)
     print("$ " + " ".join(str(c) for c in cmd))
@@ -37,6 +60,7 @@ def run(label, cmd):
 
 
 def main():
+    ensure_deps()
     if not ZIP.exists():
         sys.exit(f"!! source zip not found:\n   {ZIP}\n"
                  f"   Put the Kaggle 'Flower Classification' zip there, then re-run.")

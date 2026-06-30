@@ -1,0 +1,6 @@
+# Flower dataset pipeline (src/data_pipeline/flower/) needs these:
+numpy
+opencv-python
+
+# The iNaturalist/bee pipeline auto-installs its own deps at runtime
+# (see RUN_ME.py: pillow, torch, torchvision, imagehash, ...).
