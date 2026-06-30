@@ -60,22 +60,67 @@ DEFAULT_ROOT = os.path.dirname(os.path.dirname(HERE))  # repo root (this file li
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
+# Bee families (superfamily Apoidea) within order Hymenoptera — kept identical to
+# the data pipeline (reproduce_bee_hero.py) so the `is_bee` label derived here
+# matches the manifest's is_bee column exactly.
+BEE_FAMILIES = {
+    "Apidae", "Andrenidae", "Halictidae", "Megachilidae",
+    "Colletidae", "Melittidae", "Stenotritidae",
+}
+LABEL_MODES = ("species", "bee")   # "pollinator" is intentionally not yet defined; see below
+
 
 def _abspath(root, rel):
     """Join a manifest-relative path (may use \\ or /) onto root, cross-platform."""
     return os.path.join(root, *rel.replace("\\", "/").split("/"))
 
 
+def _is_bee_from_path(rel):
+    """Derive the bee/non-bee label straight from the taxonomy-encoded folder in
+    the path, e.g. ``train_mini\\00737_..._Insecta_Hymenoptera_Evaniidae_...\\x.jpg``.
+    Returns 1 for a bee family, else 0. This reproduces the pipeline's `is_bee`
+    flag without needing to re-join manifest_all.csv."""
+    parts = rel.replace("\\", "/").split("/")
+    folder = parts[-2] if len(parts) >= 2 else ""
+    seg = folder.split("_")
+    order = seg[4] if len(seg) > 4 else ""
+    family = seg[5] if len(seg) > 5 else ""
+    return int(order == "Hymenoptera" and family in BEE_FAMILIES)
+
+
 # --------------------------------------------------------------------------- #
 # 1. index: which image is in which split, and its label
 # --------------------------------------------------------------------------- #
-def build_index(root=DEFAULT_ROOT, save=True):
+def build_index(root=DEFAULT_ROOT, save=True, label_mode="species"):
     """Read split_assignments.csv -> (class_to_idx, samples).
 
     samples = {"train": [(abs_path, label_idx), ...], "val": [...], "test": [...]}
-    Labels are a contiguous 0..nc-1 range built from the sorted unique class_id,
-    so they match data.yaml's `nc` and are reproducible.
+
+    ``label_mode`` selects the supervision target — the same images, different
+    labels — so the project's two stated tasks share one data layer:
+
+      * "species" : fine-grained 0..nc-1 label from the sorted unique class_id
+                    (nc = 2526). class_to_idx = {class_id -> index}.
+      * "bee"     : binary bee vs non-bee, derived from the taxonomy family in
+                    the path (the pipeline's `is_bee`). class_to_idx =
+                    {"non_bee": 0, "bee": 1}. This is the README's
+                    bee/non-bee target, which was previously computed into the
+                    manifest but never used for training.
+
+    "pollinator" (bee vs other-pollinator vs non-pollinator) is deliberately
+    NOT defined here: bees are pollinators but so are many hoverflies,
+    butterflies and beetles, and the dataset carries no pollinator label. Wiring
+    it would require a curated family->pollinator mapping (a domain decision),
+    so it raises NotImplementedError rather than guessing.
     """
+    if label_mode not in LABEL_MODES:
+        if label_mode == "pollinator":
+            raise NotImplementedError(
+                "label_mode='pollinator' needs a curated family->pollinator "
+                "mapping that the dataset does not provide. Define it explicitly "
+                "(e.g. a {family: is_pollinator} table) before enabling.")
+        raise ValueError(f"label_mode must be one of {LABEL_MODES}, got {label_mode!r}")
+
     csv_path = os.path.join(root, "_pipeline", "splits", "split_assignments.csv")
     if not os.path.isfile(csv_path):
         raise FileNotFoundError(
@@ -95,16 +140,23 @@ def build_index(root=DEFAULT_ROOT, save=True):
             class_ids.add(cid)
             rows.append((split, r["path"], cid))
 
-    class_to_idx = {cid: i for i, cid in enumerate(sorted(class_ids))}
+    if label_mode == "species":
+        class_to_idx = {cid: i for i, cid in enumerate(sorted(class_ids))}
+        label_of = lambda rel, cid: class_to_idx[cid]
+    else:  # "bee"
+        class_to_idx = {"non_bee": 0, "bee": 1}
+        label_of = lambda rel, cid: _is_bee_from_path(rel)
+
     data_dir = os.path.join(root, "data", "raw", "iNaturist")  # images live here
     samples = {"train": [], "val": [], "test": []}
     for split, rel, cid in rows:
-        samples[split].append((_abspath(data_dir, rel), class_to_idx[cid]))
+        samples[split].append((_abspath(data_dir, rel), label_of(rel, cid)))
 
     if save:
         with open(os.path.join(root, "_pipeline", "class_index.json"), "w",
                   encoding="utf-8") as f:
-            json.dump({"num_classes": len(class_to_idx),
+            json.dump({"label_mode": label_mode,
+                       "num_classes": len(class_to_idx),
                        "class_to_idx": class_to_idx}, f, indent=2)
     return class_to_idx, samples
 
@@ -187,11 +239,21 @@ def build_transforms(img_size=224, train=True):
 # 3. Dataset
 # --------------------------------------------------------------------------- #
 class BeeHeroDataset(Dataset):
-    """Reads (path, label) pairs and applies the split-appropriate transform."""
+    """Reads (path, label) pairs and applies the split-appropriate transform.
 
-    def __init__(self, samples, transform):
+    A file that cannot be read still falls back to a black image so a single bad
+    file never kills an epoch, BUT the event is counted on ``self.read_failures``
+    and a warning is emitted (rate-limited) instead of failing silently — a black
+    image keeps its real label, i.e. it injects a mislabeled sample, so it must
+    be visible, not hidden. ``read_failures`` is per-worker; inspect it after an
+    epoch (or run the loader with num_workers=0) to confirm it stays 0.
+    """
+
+    def __init__(self, samples, transform, img_size=224):
         self.samples = samples
         self.transform = transform
+        self.img_size = img_size
+        self.read_failures = 0
 
     def __len__(self):
         return len(self.samples)
@@ -201,10 +263,15 @@ class BeeHeroDataset(Dataset):
         try:
             with Image.open(path) as im:
                 img = im.convert("RGB")
-        except Exception:
-            # robustness: a bad/missing file becomes a black image (rare; pipeline
-            # already verified integrity). Never crash a whole epoch.
-            img = Image.new("RGB", (224, 224))
+        except Exception as e:
+            # robustness: never crash a whole epoch on one bad/missing file, but
+            # surface it — the pipeline already verified integrity, so any hit
+            # here is a real regression worth seeing.
+            self.read_failures += 1
+            if self.read_failures <= 10:
+                print(f"[BeeHeroDataset] WARN unreadable image -> black fallback "
+                      f"(label kept={label}): {path} ({e})", flush=True)
+            img = Image.new("RGB", (self.img_size, self.img_size))
         return self.transform(img), label
 
 
@@ -212,21 +279,24 @@ class BeeHeroDataset(Dataset):
 # 4. DataLoaders  (6 GB VRAM recipe)
 # --------------------------------------------------------------------------- #
 def build_dataloaders(root=DEFAULT_ROOT, img_size=224, batch_size=32,
-                      num_workers=None, pin_memory=None):
-    """Build train/val/test DataLoaders ready to plug into a training loop."""
+                      num_workers=None, pin_memory=None, label_mode="species"):
+    """Build train/val/test DataLoaders ready to plug into a training loop.
+
+    ``label_mode`` is forwarded to :func:`build_index` ("species" for the
+    2526-way classifier, "bee" for the binary bee/non-bee target)."""
     if num_workers is None:
         num_workers = min(6, max(0, (os.cpu_count() or 4) - 2))
     if pin_memory is None:
         pin_memory = torch.cuda.is_available()
 
-    class_to_idx, samples = build_index(root)
+    class_to_idx, samples = build_index(root, label_mode=label_mode)
     train_tf, backend = build_transforms(img_size, train=True)
     eval_tf, _ = build_transforms(img_size, train=False)
 
     sets = {
-        "train": BeeHeroDataset(samples["train"], train_tf),
-        "val":   BeeHeroDataset(samples["val"],   eval_tf),
-        "test":  BeeHeroDataset(samples["test"],  eval_tf),
+        "train": BeeHeroDataset(samples["train"], train_tf, img_size),
+        "val":   BeeHeroDataset(samples["val"],   eval_tf, img_size),
+        "test":  BeeHeroDataset(samples["test"],  eval_tf, img_size),
     }
     common = dict(num_workers=num_workers, pin_memory=pin_memory,
                   persistent_workers=num_workers > 0,
@@ -236,9 +306,9 @@ def build_dataloaders(root=DEFAULT_ROOT, img_size=224, batch_size=32,
     val_dl = DataLoader(sets["val"], batch_size=batch_size, shuffle=False, **common)
     test_dl = DataLoader(sets["test"], batch_size=batch_size, shuffle=False, **common)
 
-    print(f"[bee_hero_dataset] backend={backend} nc={len(class_to_idx)} "
-          f"train={len(sets['train'])} val={len(sets['val'])} test={len(sets['test'])} "
-          f"workers={num_workers}")
+    print(f"[bee_hero_dataset] backend={backend} label_mode={label_mode} "
+          f"nc={len(class_to_idx)} train={len(sets['train'])} val={len(sets['val'])} "
+          f"test={len(sets['test'])} workers={num_workers}")
     return train_dl, val_dl, test_dl, class_to_idx
 
 
@@ -292,11 +362,11 @@ def _denormalize(t):
     return (t.cpu() * std + mean).clamp(0, 1)
 
 
-def _self_test(root=DEFAULT_ROOT):
-    print("=== BEE_HERo data-readiness self-test ===")
+def _self_test(root=DEFAULT_ROOT, label_mode="species"):
+    print(f"=== BEE_HERo data-readiness self-test (label_mode={label_mode}) ===")
     # small, fast settings just to prove the pipeline works
     train_dl, val_dl, test_dl, class_to_idx = build_dataloaders(
-        root=root, batch_size=16, num_workers=2)
+        root=root, batch_size=16, num_workers=2, label_mode=label_mode)
     nc = len(class_to_idx)
 
     # (a) load one real batch from each split
@@ -348,4 +418,7 @@ if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=DEFAULT_ROOT)
-    _self_test(ap.parse_args().root)
+    ap.add_argument("--label-mode", default="species", choices=LABEL_MODES,
+                    help="'species' (2526-way) or 'bee' (binary bee vs non-bee)")
+    args = ap.parse_args()
+    _self_test(args.root, label_mode=args.label_mode)
