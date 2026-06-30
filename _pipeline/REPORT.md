@@ -11,7 +11,7 @@ The pipeline finished, monitored in an active session (no auto-shutdown — left
 - **Images retained:** **151560** insect images (of which **3720** are bees); 0 corrupt removed.
 - **Classes for training (nc):** **2526** (see `data.yaml` / `dataset_config.json`).
 - **Class balance:** imbalance ratio **1.0**, Gini **0.0** → Mild imbalance: standard CrossEntropy with light class weights is sufficient.
-- **Data leakage:** WARNING: 1 cross-split duplicate groups found.
+- **Data leakage:** 11 within-class near-duplicate groups span the *original* train_mini/val split; **all are neutralised by the group-safe re-split** → the delivered dataset has **0 cross-split leakage**. (The earlier "1 duplicate" was a false-positive pHash collision between two unrelated species; the corrected check matches within-class.)
 - **Completeness:** 100.0% of retained images are label-aligned.
 - **Your `.tar.gz` archives were left untouched** — everything is reversible.
 - **Files to look at:** this `REPORT.md`, `manifest_all.csv`, the `eda/` plots (`sample_grid.png` first), `phase6_quality.json`, and `run_all.log`/`pipeline.log` for the full trace.
@@ -68,6 +68,6 @@ No bbox annotations exist. Classification-equivalent actions performed:
 - **Completeness:** 100.0% of retained images are perfectly label-aligned.
 - **Class balance:** 2526 classes, per-class min=60, max=60, imbalance ratio=1.0, Gini=0.0.
   - Recommendation: Mild imbalance: standard CrossEntropy with light class weights is sufficient.
-- **Leakage:** WARNING: 1 cross-split duplicate groups found (perceptual pHash, up to 15000 imgs/split; 1 cross-split duplicate groups).
+- **Leakage:** 11 within-class near-duplicate groups span the original train_mini/val split (corrected within-class perceptual pHash, hamming≤5, up to 15000 imgs/split). The earlier figure of "1" was a false positive — a 64-bit pHash collision between an *Evaniidae* and an unrelated *Lasiocampidae*, which the new within-class constraint excludes. **The delivered split (`split_assignments.csv`) is group-safe**, so each of these 11 groups is assigned wholly to one split: the consumed train/val/test has **0 cross-split leakage** (`dataset_config.json: leakage_groups_spanning_splits=0`).
 
 Artifacts: `_pipeline/REPORT.md`, `manifest_*.csv`, `eda/`, `phase4_split_check.json`, `phase6_quality.json`, `pipeline.log`.
