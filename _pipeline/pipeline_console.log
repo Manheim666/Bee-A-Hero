@@ -1,0 +1,60 @@
+[2026-06-29T06:40:37] === pipeline start ===
+[2026-06-29T06:40:37] disk check @ start: 252.7 GB free
+[2026-06-29T06:40:37] disk check @ phase1:train_mini:start: 252.7 GB free
+[2026-06-29T06:40:45] disk check @ phase1:train_mini:progress: 256.6 GB free
+[2026-06-29T06:41:06] disk check @ phase1:train_mini:progress: 256.6 GB free
+[2026-06-29T06:41:51] disk check @ phase1:train_mini:progress: 256.6 GB free
+[2026-06-29T06:42:39] disk check @ phase1:train_mini:progress: 256.4 GB free
+[2026-06-29T06:43:27] disk check @ phase1:train_mini:progress: 256.4 GB free
+[2026-06-29T06:44:15] disk check @ phase1:train_mini:progress: 255.9 GB free
+[2026-06-29T06:45:07] disk check @ phase1:train_mini:progress: 254.9 GB free
+[2026-06-29T06:45:57] disk check @ phase1:train_mini:progress: 253.8 GB free
+[2026-06-29T06:46:46] disk check @ phase1:train_mini:progress: 256.2 GB free
+[2026-06-29T06:47:38] disk check @ phase1:train_mini:progress: 256.0 GB free
+[2026-06-29T06:48:27] disk check @ phase1:train_mini:progress: 256.0 GB free
+[2026-06-29T06:49:15] disk check @ phase1:train_mini:progress: 255.5 GB free
+[2026-06-29T06:50:57] phase1: train_mini audited_folders=9825 kept=2526 removed=7299 kept_images=126300 corrupt=0 bees=3100
+[2026-06-29T06:50:57] disk check @ phase1:val:start: 287.5 GB free
+[2026-06-29T06:51:08] disk check @ phase1:val:progress: 287.7 GB free
+[2026-06-29T06:51:19] disk check @ phase1:val:progress: 287.7 GB free
+[2026-06-29T06:51:28] disk check @ phase1:val:progress: 287.7 GB free
+[2026-06-29T06:51:38] disk check @ phase1:val:progress: 287.7 GB free
+[2026-06-29T06:51:47] disk check @ phase1:val:progress: 287.7 GB free
+[2026-06-29T06:51:57] disk check @ phase1:val:progress: 287.6 GB free
+[2026-06-29T06:52:07] disk check @ phase1:val:progress: 287.4 GB free
+[2026-06-29T06:52:17] disk check @ phase1:val:progress: 287.4 GB free
+[2026-06-29T06:52:27] disk check @ phase1:val:progress: 287.4 GB free
+[2026-06-29T06:52:37] disk check @ phase1:val:progress: 287.4 GB free
+[2026-06-29T06:52:47] disk check @ phase1:val:progress: 287.4 GB free
+[2026-06-29T06:52:57] disk check @ phase1:val:progress: 287.4 GB free
+[2026-06-29T06:53:22] phase1: val audited_folders=10000 kept=2526 removed=7474 kept_images=25260 corrupt=0 bees=620
+[2026-06-29T06:53:23] phase1: public_test unlabeled images (left intact) = 500000
+[2026-06-29T06:53:24] phase1/2: manifest rows=151560
+[2026-06-29T06:53:24] phase5: wrote data.yaml + dataset_config.json (nc=2526)
+[2026-06-29T06:53:29] eda: wrote sample_grid.png
+[2026-06-29T06:53:29] phase3: EDA done species=2526 orders=17
+[2026-06-29T06:53:29] phase4: split check {'train_species': 2526, 'val_species': 2526, 'species_only_in_train': 0, 'species_only_in_val': 0, 'train_images': 126300, 'val_images': 25260}
+[2026-06-29T06:53:29] phase6: computing perceptual hashes for leakage check (sampled)...
+[2026-06-29T06:53:37] disk check @ phase6:leak: 293.9 GB free
+[2026-06-29T06:53:37] phase6: hashed 3000 in train_mini
+[2026-06-29T06:53:43] disk check @ phase6:leak: 293.9 GB free
+[2026-06-29T06:53:43] phase6: hashed 6000 in train_mini
+[2026-06-29T06:53:49] disk check @ phase6:leak: 293.9 GB free
+[2026-06-29T06:53:49] phase6: hashed 9000 in train_mini
+[2026-06-29T06:53:55] disk check @ phase6:leak: 293.9 GB free
+[2026-06-29T06:53:55] phase6: hashed 12000 in train_mini
+[2026-06-29T06:54:01] disk check @ phase6:leak: 293.9 GB free
+[2026-06-29T06:54:01] phase6: hashed 15000 in train_mini
+[2026-06-29T06:54:06] disk check @ phase6:leak: 293.9 GB free
+[2026-06-29T06:54:06] phase6: hashed 3000 in val
+[2026-06-29T06:54:11] disk check @ phase6:leak: 293.9 GB free
+[2026-06-29T06:54:11] phase6: hashed 6000 in val
+[2026-06-29T06:54:16] disk check @ phase6:leak: 293.9 GB free
+[2026-06-29T06:54:16] phase6: hashed 9000 in val
+[2026-06-29T06:54:22] disk check @ phase6:leak: 293.9 GB free
+[2026-06-29T06:54:22] phase6: hashed 12000 in val
+[2026-06-29T06:54:27] disk check @ phase6:leak: 293.9 GB free
+[2026-06-29T06:54:27] phase6: hashed 15000 in val
+[2026-06-29T06:54:27] phase6: quality eval done leakage_groups=1
+[2026-06-29T06:54:27] report written: C:\Users\narim\Desktop\BEE_HERo\_pipeline\REPORT.md
+[2026-06-29T06:54:27] === pipeline COMPLETED OK ===

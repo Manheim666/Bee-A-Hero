@@ -1,0 +1,7 @@
+# BEE_HERo - Option-3 re-split (pooled+dedup+stratified, group-safe)
+path: C:\Users\narim\Desktop\BEE_HERo
+train: _pipeline/splits/train.txt
+val: _pipeline/splits/val.txt
+test: _pipeline/splits/test.txt
+nc: 2526
+# class names listed in dataset_config.json / split_assignments.csv
