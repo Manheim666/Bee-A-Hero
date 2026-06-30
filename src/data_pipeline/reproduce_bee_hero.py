@@ -572,7 +572,10 @@ def phase4_resplit(rows):
         json.dump(cfg, f, indent=2)
     with open(os.path.join(ROOT, "data.yaml"), "w", encoding="utf-8") as f:
         f.write("# BEE_HERo - Option-3 re-split (pooled+dedup+stratified, group-safe)\n")
-        f.write(f"path: {DATA}\n")
+        # repo-relative path so data.yaml is portable across machines/checkouts
+        # (the split-list entries are stored relative to this dir).
+        rel_data = os.path.relpath(DATA, ROOT).replace(os.sep, "/")
+        f.write(f"path: {rel_data}\n")
         f.write("train: _pipeline/splits/train.txt\n")
         f.write("val: _pipeline/splits/val.txt\n")
         f.write("test: _pipeline/splits/test.txt\n")

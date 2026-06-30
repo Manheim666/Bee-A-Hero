@@ -12,23 +12,33 @@
   },
   "loss_recommendation": "Mild imbalance: standard CrossEntropy with light class weights is sufficient.",
   "leakage": {
-    "cross_split_duplicate_groups": 1,
+    "method": "within-class perceptual pHash (union-find, hamming<=5)",
+    "cross_split_duplicate_groups": 11,
     "sampled_per_split_cap": 15000,
     "examples": [
       {
-        "phash": "b3c8cc3333cccc33",
+        "class_id": "00345",
         "items": [
-          [
-            "train_mini",
-            "train_mini\\00737_Animalia_Arthropoda_Insecta_Hymenoptera_Evaniidae_Evania_appendigaster\\524b7798-5432-4547-b6ab-f8e3673cb9f7.jpg"
-          ],
-          [
-            "val",
-            "val\\01422_Animalia_Arthropoda_Insecta_Lepidoptera_Lasiocampidae_Phyllodesma_americana\\0633bf0f-8476-4b43-af98-17e8d1d6293e.jpg"
-          ]
+          ["train_mini", "train_mini\\00345_Animalia_Arthropoda_Insecta_Coleoptera_Dermestidae_Dermestes_lardarius\\67b6b8ac-2702-4a59-9745-e1c16ab08c61.jpg"],
+          ["val", "val\\00345_Animalia_Arthropoda_Insecta_Coleoptera_Dermestidae_Dermestes_lardarius\\8cdca5e7-1858-4bd4-b97b-b311abed4334.jpg"]
+        ]
+      },
+      {
+        "class_id": "00737",
+        "items": [
+          ["train_mini", "train_mini\\00737_Animalia_Arthropoda_Insecta_Hymenoptera_Evaniidae_Evania_appendigaster\\524b7798-5432-4547-b6ab-f8e3673cb9f7.jpg"],
+          ["val", "val\\00737_Animalia_Arthropoda_Insecta_Hymenoptera_Evaniidae_Evania_appendigaster\\f2e6a717-d4b3-49d3-87bf-5bcb62e6dd3d.jpg"]
+        ]
+      },
+      {
+        "class_id": "00836",
+        "items": [
+          ["train_mini", "train_mini\\00836_Animalia_Arthropoda_Insecta_Hymenoptera_Vespidae_Polistes_major\\43a4feb6-b97c-46ff-aaf3-9be9965fc5dc.jpg"],
+          ["val", "val\\00836_Animalia_Arthropoda_Insecta_Hymenoptera_Vespidae_Polistes_major\\c8208341-51ea-4666-95fb-67c7e94940b1.jpg"]
         ]
       }
     ],
-    "verdict": "WARNING: 1 cross-split duplicate groups found"
+    "note": "Within-class matching. The earlier bare-pHash check reported 1 group, but that was a FALSE POSITIVE (a 64-bit pHash collision between an Evaniidae and an unrelated Lasiocampidae). The corrected within-class check finds 11 genuine near-duplicate groups that span the ORIGINAL train_mini<->val split. All 11 are neutralised by the delivered group-safe re-split (split_assignments.csv), which keeps each duplicate group within a single split -> 0 cross-split leakage in the consumed dataset (see dataset_config.json: leakage_groups_spanning_splits=0).",
+    "verdict": "11 within-class near-duplicate groups span the original train_mini/val split (neutralised by the group-safe re-split; consumed dataset has 0 leakage)"
   }
 }
