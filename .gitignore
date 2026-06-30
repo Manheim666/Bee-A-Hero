@@ -1,5 +1,6 @@
-# Large dataset — not pushed
-data/raw/iNaturist/
+# Large dataset — track folder, ignore contents
+data/raw/iNaturist/*
+!data/raw/iNaturist/.gitkeep
 
 # Local Claude Code settings
 .claude/settings.local.json
