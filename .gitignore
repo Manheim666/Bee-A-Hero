@@ -1,0 +1,5 @@
+# Large dataset — not pushed
+data/raw/iNaturist/
+
+# Local Claude Code settings
+.claude/settings.local.json
