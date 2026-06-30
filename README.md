@@ -19,12 +19,22 @@ insect image dataset, with a focus on retaining all **Insecta** species and tagg
 - **Classes (`nc`):** **2526** unique Insecta species.
 - **Orders represented:** 17.
 
-| Split | Folders kept | Images kept | Bee images | Notes |
-|-------|-------------|-------------|------------|-------|
-| `train_mini` | 2526 | 126,300 | 3,100 | filtered to Insecta |
-| `val` | 2526 | 25,260 | 620 | filtered to Insecta |
-| `public_test` | — | 500,000 | — | flat/**unlabeled**, left intact (profiled only) |
-| **Total (labeled)** | **5,052** | **151,560** | **3,720** | |
+**Model-ready split** — the labeled images (`train_mini` + `val`, pooled) are perceptually
+de-duplicated and stratified by species (group-safe) into an **80/10/10** train/val/test split:
+
+| Split | Images | Share |
+|-------|--------|-------|
+| `train` | 121,226 | 80% |
+| `val` | 15,157 | 10% |
+| `test` | 15,155 | 10% |
+| **Total (labeled)** | **151,538** | 100% |
+
+> **Before splitting:** `train_mini` (126,300 imgs) + `val` (25,260) = **151,560** labeled Insecta
+> images across **2526** species; ~22 exact duplicates dropped during dedup.
+>
+> **`public_test` (500,000 flat, *unlabeled* images) is NOT part of this split.** It has no labels
+> (just numbered `.jpg`s), so it can't be trained/evaluated on — it's kept aside for
+> inference / leaderboard submission only.
 
 - Folders audited: **19,825** → kept **5,052**, removed **14,773** non-insect.
 - Corrupt images removed: **0** (every retained image opened + verified with PIL).
