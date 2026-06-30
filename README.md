@@ -101,3 +101,12 @@ python src/data_pipeline/pipeline.py > _pipeline/pipeline_console.log 2>&1 &
 ```
 The pipeline is idempotent: it re-walks everything, re-removes non-insect folders, keeps
 insects, and rebuilds manifests. The `.tar.gz` archives are never modified.
+
+## Daily Activities
+- **2026-06-30 — Raul/Data —** Reorganized the repo so all raw data (archives + extracted
+  `train_mini/`, `val/`, `public_test/`) lives under `data/raw/iNaturist/`. Repointed every
+  script (`pipeline.py`, `reproduce_bee_hero.py`, `resplit_option3.py`, `bee_hero_dataset.py`,
+  `RUN_ME.py`) to read splits/archives from there; code stays in `src/`, artifacts in
+  `_pipeline/`. Updated `data.yaml` `path:`, `dataset_config.json` `root`, and `.gitignore`.
+  Existing manifests/splits remain valid (paths resolve into the new data dir) — verified the
+  loader builds **2526** classes / train-val-test = 121,226 / 15,157 / 15,155.
