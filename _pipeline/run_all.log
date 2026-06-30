@@ -1,0 +1,10 @@
+[Mon Jun 29 01:33:44 AST 2026] run_all started
+[Mon Jun 29 01:37:15 AST 2026] extraction complete
+[Mon Jun 29 01:37:15 AST 2026] launching pipeline.py
+[2026-06-29T01:37:15] === pipeline start ===
+[2026-06-29T01:37:15] disk check @ start: 255.5 GB free
+[2026-06-29T01:37:15] disk check @ phase1:train_mini:start: 255.5 GB free
+[2026-06-29T01:38:29] disk check @ phase1:train_mini:progress: 256.1 GB free
+[Mon Jun 29 01:39:07 AST 2026] pipeline exited rc=127
+[Mon Jun 29 01:39:07 AST 2026] scheduling shutdown in 90s
+[Mon Jun 29 01:39:07 AST 2026] shutdown scheduled

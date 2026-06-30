@@ -1,0 +1,34 @@
+{
+  "completeness_pct": 100.0,
+  "kept_images": 151560,
+  "corrupt_removed": 0,
+  "audited_images_est": 591250,
+  "class_balance": {
+    "species": 2526,
+    "max_per_class": 60,
+    "min_per_class": 60,
+    "imbalance_ratio": 1.0,
+    "gini": 0.0
+  },
+  "loss_recommendation": "Mild imbalance: standard CrossEntropy with light class weights is sufficient.",
+  "leakage": {
+    "cross_split_duplicate_groups": 1,
+    "sampled_per_split_cap": 15000,
+    "examples": [
+      {
+        "phash": "b3c8cc3333cccc33",
+        "items": [
+          [
+            "train_mini",
+            "train_mini\\00737_Animalia_Arthropoda_Insecta_Hymenoptera_Evaniidae_Evania_appendigaster\\524b7798-5432-4547-b6ab-f8e3673cb9f7.jpg"
+          ],
+          [
+            "val",
+            "val\\01422_Animalia_Arthropoda_Insecta_Lepidoptera_Lasiocampidae_Phyllodesma_americana\\0633bf0f-8476-4b43-af98-17e8d1d6293e.jpg"
+          ]
+        ]
+      }
+    ],
+    "verdict": "WARNING: 1 cross-split duplicate groups found"
+  }
+}

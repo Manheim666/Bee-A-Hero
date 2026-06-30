@@ -1,0 +1,19 @@
+{
+  "num_species": 2526,
+  "num_orders": 17,
+  "images_total": 151560,
+  "meta_sampled": 6000,
+  "res_w_min_med_max": [
+    172,
+    500,
+    500
+  ],
+  "res_h_min_med_max": [
+    160,
+    385,
+    500
+  ],
+  "channel_modes": {
+    "RGB": 6000
+  }
+}

@@ -1,6 +1,29 @@
-# Large dataset — track folder, ignore contents
+# --- Large datasets / archives (regenerate with reproduce_bee_hero.py / RUN_ME.py) ---
+# Raw data lives under data/raw/iNaturist/ ; keep the folder, ignore its heavy contents.
+*.tar.gz
 data/raw/iNaturist/*
 !data/raw/iNaturist/.gitkeep
+# fallback: ignore these split dirs wherever they appear
+public_test/
+train_mini/
+val/
 
-# Local Claude Code settings
+# --- Flower dataset: source zip + rebuilt outputs (too large for git) ---
+data/raw/Flower/*
+!data/raw/Flower/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+
+# --- Python artifacts ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# --- Env / local ---
+.env
+.venv/
+venv/
 .claude/settings.local.json
