@@ -91,6 +91,37 @@ def _now() -> str:
 
 
 # --------------------------------------------------------------------------- #
+# Dataset availability (the raw images are git-ignored — a fresh clone is empty)
+# --------------------------------------------------------------------------- #
+DATASET_HELP = (
+    "iNaturalist raw data not found under data/raw/iNaturist/.\n"
+    "The image dataset is git-ignored (too large to version), so a fresh clone\n"
+    "has an empty data/ tree. To run the pipeline, obtain the iNaturalist 2021\n"
+    "archives and extract them so the layout is:\n"
+    "    data/raw/iNaturist/train_mini/   (+ train_mini.json)\n"
+    "    data/raw/iNaturist/val/          (+ val.json)\n"
+    "    data/raw/iNaturist/public_test/  (+ public_test.json)\n"
+    "Source: https://github.com/visipedia/inat_comp/tree/master/2021\n"
+    "Then re-run — the seeded pipeline reproduces the exact same splits/labels."
+)
+
+
+def dataset_present() -> bool:
+    """True if at least one labeled split has species sub-folders on disk."""
+    for split in C.INAT_LABELED_SPLITS:
+        d = C.INAT_DIR / split
+        if d.is_dir() and any(p.is_dir() for p in d.iterdir()):
+            return True
+    return False
+
+
+def require_dataset() -> None:
+    """Raise a clear, actionable error if the raw dataset is missing."""
+    if not dataset_present():
+        raise FileNotFoundError(DATASET_HELP)
+
+
+# --------------------------------------------------------------------------- #
 # Backup move (the only mutating primitive)
 # --------------------------------------------------------------------------- #
 def move_to_backup(path: Path, reason: str, apply: bool) -> dict:
@@ -392,6 +423,7 @@ def write_outputs(kept: list[dict], removed: list[dict], class_names: list[str])
 # Orchestration
 # --------------------------------------------------------------------------- #
 def run(apply: bool = False, skip_dedup: bool = False) -> dict:
+    require_dataset()                       # clear error if raw data is missing
     removed: list[dict] = []
     removed += filter_non_insecta(apply=apply)
 
