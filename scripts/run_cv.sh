@@ -15,7 +15,7 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"; cd "$REPO"
 PY=.venv/bin/python
 RUNS=data/interim/cv_runs
-CLASSIFIER_MODEL="${CLASSIFIER_MODEL:-convnext_large_mlp.laion2b_ft_augreg_inat21}"
+CLASSIFIER_MODEL="${CLASSIFIER_MODEL:-hf-hub:timm/convnext_large_mlp.laion2b_ft_augreg_inat21}"
 EPOCHS="${EPOCHS:-60}"
 
 [ -x "$PY" ] || { echo "No .venv — run scripts/setup_env.sh && scripts/setup_cv.sh"; exit 1; }
@@ -40,7 +40,8 @@ log "[3/5] Insect detector (single-class, high mAP)"
 
 log "[4/5] Pollinator/non-pollinator classifier ($CLASSIFIER_MODEL)"
 [ -f "$RUNS/insect_classifier/best.pt" ] || \
-  "$PY" -m src.cv_engine.train_classifier --model "$CLASSIFIER_MODEL" --freeze --epochs 12
+  "$PY" -m src.cv_engine.train_classifier --model "$CLASSIFIER_MODEL" --freeze \
+        --epochs "${CLS_EPOCHS:-8}" --batch "${CLS_BATCH:-8}"
 
 log "[5/5] Flower-visit counting on Test_Video"
 shopt -s nullglob

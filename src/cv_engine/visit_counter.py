@@ -47,7 +47,7 @@ class Classifier:
         import timm
         import torch
         self.torch = torch
-        ckpt = torch.load(weights, map_location="cpu", weights_only=False)
+        ckpt = torch.load(weights, map_location="cpu", weights_only=True)
         self.classes = ckpt["classes"]
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = timm.create_model(ckpt["model"], pretrained=False, num_classes=len(self.classes))
