@@ -1,0 +1,7 @@
+# CV stage dependencies (heavy — separate from the data-stage requirements.txt).
+# Install with:  bash scripts/setup_cv.sh   (needs an NVIDIA GPU for training)
+# Verified target: RTX 3050 6GB, Python 3.14, CUDA wheels.
+torch
+torchvision
+ultralytics          # YOLO26 + BoT-SORT tracking
+lap                  # tracker association (BoT-SORT/ByteTrack)
