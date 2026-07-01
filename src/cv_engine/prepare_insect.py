@@ -37,11 +37,14 @@ _MP = multiprocessing.get_context("fork")
 OUT = C.INTERIM_DIR / "insect_det"
 NAMES = ["pollinator", "non_pollinator"]
 
-# Real-box bee detection sets (Roboflow COCO exports on the Desktop).
-DESKTOP = Path.home() / "Desktop"
+# Real-box bee detection set (Roboflow COCO export).
+# Only BEE.v8i (single iNat-sourced garden bees) — the Honey Bee hive export
+# (~16 tiny dense bees/frame, hive-monitoring domain) tanks detection mAP and
+# does not match the garden flower-visit videos, so it is excluded from detection.
+# Portable location (git-ignored): data/raw/BEE_coco/ (see src/config.BEE_COCO_DIR).
+# If absent, the pipeline still runs on iNaturalist alone (roboflow step skipped).
 ROBOFLOW_SETS = [
-    DESKTOP / "BEE.v8i.coco",
-    DESKTOP / "Honey Bee Detection Model.v4-883base-x7aug.coco",
+    C.BEE_COCO_DIR,
 ]
 _RF_SPLIT = {"train": "train", "valid": "val", "test": "test"}
 
@@ -121,6 +124,65 @@ def _convert_roboflow() -> Counter:
                     "\n".join(lines) + "\n")
                 stats[f"{our_split}_roboflow"] += 1
     return stats
+
+
+def export_single_class(dst: Path | None = None) -> str:
+    """Derive a single-class ``insect`` detection set from the 2-class boxes.
+
+    Reuses the GrabCut/Roboflow boxes already in ``insect_det`` (no re-compute):
+    images are symlinked, labels rewritten to class 0. Used to train the
+    high-mAP detector; the 2-class set stays for building classifier crops.
+    """
+    dst = dst or (C.INTERIM_DIR / "insect_det1")
+    for split in ("train", "val", "test"):
+        (dst / "images" / split).mkdir(parents=True, exist_ok=True)
+        (dst / "labels" / split).mkdir(parents=True, exist_ok=True)
+        for img in (OUT / "images" / split).iterdir():
+            link = dst / "images" / split / img.name
+            if not link.exists():
+                link.symlink_to(img.resolve())
+        for lbl in (OUT / "labels" / split).glob("*.txt"):
+            lines = ["0 " + " ".join(l.split()[1:])
+                     for l in lbl.read_text().splitlines() if l.strip()]
+            (dst / "labels" / split / lbl.name).write_text("\n".join(lines) + "\n")
+    (dst / "data.yaml").write_text(
+        f"# single-class insect detector (high-mAP stage 1)\n"
+        f"path: {dst.resolve()}\ntrain: images/train\nval: images/val\ntest: images/test\n"
+        f"nc: 1\nnames: [insect]\n")
+    return str(dst / "data.yaml")
+
+
+def export_classifier_crops(dst: Path | None = None, min_size: int = 20) -> dict:
+    """Crop every labeled box from the 2-class set into an ImageFolder for the
+    pollinator/non_pollinator classifier: ``insect_cls/<split>/<class>/<crop>.jpg``.
+    """
+    dst = dst or (C.INTERIM_DIR / "insect_cls")
+    names = {0: "pollinator", 1: "non_pollinator"}
+    counts: Counter = Counter()
+    for split in ("train", "val", "test"):
+        for cn in names.values():
+            (dst / split / cn).mkdir(parents=True, exist_ok=True)
+        for lbl in sorted((OUT / "labels" / split).glob("*.txt")):
+            cand = list((OUT / "images" / split).glob(lbl.stem + ".*"))
+            if not cand:
+                continue
+            img = cv2.imread(str(cand[0]))
+            if img is None:
+                continue
+            H, W = img.shape[:2]
+            for i, line in enumerate(lbl.read_text().splitlines()):
+                p = line.split()
+                if len(p) < 5:
+                    continue
+                c = int(p[0]); cx, cy, w, h = map(float, p[1:5])
+                x1, y1 = max(0, int((cx - w / 2) * W)), max(0, int((cy - h / 2) * H))
+                x2, y2 = min(W, int((cx + w / 2) * W)), min(H, int((cy + h / 2) * H))
+                if x2 - x1 < min_size or y2 - y1 < min_size:
+                    continue
+                cv2.imwrite(str(dst / split / names[c] / f"{lbl.stem}_{i}.jpg"),
+                            img[y1:y2, x1:x2])
+                counts[f"{split}_{names[c]}"] += 1
+    return dict(counts)
 
 
 def _write_yaml() -> None:
