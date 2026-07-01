@@ -1,0 +1,36 @@
+{
+  "generated": "2026-07-01T13:17:36+00:00",
+  "seed": 42,
+  "ratios": {
+    "train": 0.7,
+    "val": 0.15,
+    "test": 0.15
+  },
+  "num_classes": 2526,
+  "kept_images": 151545,
+  "split_counts": {
+    "train": 106077,
+    "val": 22734,
+    "test": 22734
+  },
+  "split_fractions": {
+    "train": 0.7,
+    "val": 0.15,
+    "test": 0.15
+  },
+  "bee_images_per_split": {
+    "train": 2604,
+    "val": 558,
+    "test": 558
+  },
+  "removed_total": 0,
+  "removed_by_reason": {},
+  "public_test_reduction": {
+    "target": 22734,
+    "action": "skip (already <= target)",
+    "public_test_total": 22734,
+    "kept": 22734,
+    "removed": 0
+  },
+  "mode": "APPLIED"
+}

@@ -1,0 +1,144 @@
+{
+  "inspection": {
+    "train_mini": {
+      "folders": 2526,
+      "insecta_folders": 2526,
+      "non_insecta_folders": 0,
+      "images": 126290
+    },
+    "val": {
+      "folders": 2526,
+      "insecta_folders": 2526,
+      "non_insecta_folders": 0,
+      "images": 25255
+    },
+    "public_test": {
+      "images": 22734,
+      "note": "unlabeled \u2014 inference only, not in split"
+    }
+  },
+  "backup_verification": {
+    "present": false,
+    "ok": true,
+    "note": "backup removed post-cleanup \u2014 not required"
+  },
+  "balancing": {
+    "generated": "2026-07-01T13:17:36+00:00",
+    "seed": 42,
+    "ratios": {
+      "train": 0.7,
+      "val": 0.15,
+      "test": 0.15
+    },
+    "num_classes": 2526,
+    "kept_images": 151545,
+    "split_counts": {
+      "train": 106077,
+      "val": 22734,
+      "test": 22734
+    },
+    "split_fractions": {
+      "train": 0.7,
+      "val": 0.15,
+      "test": 0.15
+    },
+    "bee_images_per_split": {
+      "train": 2604,
+      "val": 558,
+      "test": 558
+    },
+    "removed_total": 0,
+    "removed_by_reason": {},
+    "public_test_reduction": {
+      "target": 22734,
+      "action": "skip (already <= target)",
+      "public_test_total": 22734,
+      "kept": 22734,
+      "removed": 0
+    },
+    "mode": "APPLIED"
+  },
+  "label_regeneration": {
+    "filter_original": [
+      {
+        "source": "train_mini.json",
+        "images_before": 500000,
+        "images_after": 126290,
+        "annotations_before": 500000,
+        "annotations_after": 126290,
+        "categories_before": 10000,
+        "categories_after": 2526
+      },
+      {
+        "source": "val.json",
+        "images_before": 100000,
+        "images_after": 25255,
+        "annotations_before": 100000,
+        "annotations_after": 25255,
+        "categories_before": 10000,
+        "categories_after": 2526
+      }
+    ],
+    "clean_labels": {
+      "train": {
+        "images": 106077,
+        "annotations": 106077
+      },
+      "val": {
+        "images": 22734,
+        "annotations": 22734
+      },
+      "test": {
+        "images": 22734,
+        "annotations": 22734
+      },
+      "num_categories": 2526
+    }
+  },
+  "label_validation": {
+    "num_classes": 2526,
+    "manifest_images": 151545,
+    "disk_images": 151545,
+    "images_without_labels": 0,
+    "labels_without_images": 0,
+    "duplicated_labels": 0,
+    "invalid_category_ids": 0,
+    "corrupted_labels": 0,
+    "cross_split_leakage": 0,
+    "examples": {
+      "images_without_labels": [],
+      "labels_without_images": []
+    },
+    "all_checks_pass": true
+  },
+  "integrity": {
+    "missing_files": 0,
+    "duplicate_labels": 0,
+    "corrupted_images": 0,
+    "near_duplicate_groups_sampled": 0,
+    "examples": {
+      "missing": [],
+      "corrupted": []
+    }
+  },
+  "directory_consistency": {
+    "train_folders": 2526,
+    "val_folders": 2526,
+    "class_sets_identical": true,
+    "manifest_classes": 2526,
+    "all_paths_under_labeled_splits": true,
+    "every_class_has_all_splits": true
+  },
+  "gate": {
+    "backup_verified": true,
+    "labels_valid": true,
+    "no_missing_files": true,
+    "no_duplicate_labels": true,
+    "no_corrupted_images": true,
+    "class_sets_identical": true,
+    "every_class_all_splits": true,
+    "split_is_70_15_15": true,
+    "public_test_reduced_to_val": true
+  },
+  "DATA_READY": true
+}
