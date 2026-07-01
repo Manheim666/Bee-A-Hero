@@ -26,6 +26,7 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import random
 import shutil
 from collections import defaultdict
@@ -276,6 +277,57 @@ def assign_splits(kept: list[dict], seed: int) -> list[dict]:
 
 
 # --------------------------------------------------------------------------- #
+# Stage 5 — downsample the (unlabeled) public_test folder
+# --------------------------------------------------------------------------- #
+def reduce_public_test(target: int, apply: bool) -> dict:
+    """Shrink the huge unlabeled ``public_test/`` folder to ``target`` images.
+
+    Deterministic (seeded) so every teammate keeps the *same* subset: the flat
+    image list is sorted, shuffled with ``config.SEED``, and the first
+    ``target`` are kept. Surplus images are moved to ``data/_backup/removed/``
+    (never deleted here). Idempotent — a no-op once the folder is already at or
+    below ``target``. Writes the reproducible kept-list to
+    ``manifests/public_test_kept.txt``.
+    """
+    pt = C.INAT_DIR / C.INAT_UNLABELED_SPLIT
+    result = {"target": target, "action": "none"}
+    if not pt.is_dir():
+        result["action"] = "skip (no public_test dir)"
+        return result
+
+    imgs = sorted(p for p in pt.iterdir()
+                  if p.is_file() and p.suffix.lower() in C.IMAGE_EXTS)
+    total = len(imgs)
+    result["public_test_total"] = total
+
+    if total <= target:
+        keep = imgs
+        surplus: list[Path] = []
+        result["action"] = "skip (already <= target)"
+    else:
+        order = list(imgs)                      # already sorted -> deterministic
+        random.Random(C.SEED).shuffle(order)
+        keep_set = set(order[:target])
+        keep = [p for p in imgs if p in keep_set]
+        surplus = [p for p in imgs if p not in keep_set]
+        result["action"] = "APPLIED" if apply else "DRY_RUN"
+
+    C.MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
+    (C.MANIFEST_DIR / "public_test_kept.txt").write_text(
+        "\n".join(_rel(p) for p in sorted(keep)) + "\n")
+
+    if apply and surplus:
+        dest_dir = C.REMOVED_DIR / pt.relative_to(C.REPO_ROOT)
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        for p in surplus:
+            os.rename(p, dest_dir / p.name)      # same filesystem -> fast rename
+
+    result["kept"] = len(keep)
+    result["removed"] = len(surplus)
+    return result
+
+
+# --------------------------------------------------------------------------- #
 # Writers
 # --------------------------------------------------------------------------- #
 _MANIFEST_COLS = ["path", "class_id", "class_name", "order", "family", "genus",
@@ -297,7 +349,12 @@ def write_outputs(kept: list[dict], removed: list[dict], class_names: list[str])
     C.MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
     manifest = sorted(kept, key=lambda r: (r["class_id"], r["split"], r["path"]))
     _write_csv(C.MANIFEST_DIR / "split_manifest.csv", _MANIFEST_COLS, manifest)
-    _write_csv(C.MANIFEST_DIR / "removed_log.csv", _REMOVED_COLS, removed)
+    # Preserve the audit log on idempotent re-runs: only (re)write when this run
+    # actually removed something, or when no log exists yet. Otherwise a second
+    # --apply (which finds nothing left to remove) would wipe the record.
+    removed_log = C.MANIFEST_DIR / "removed_log.csv"
+    if removed or not removed_log.exists():
+        _write_csv(removed_log, _REMOVED_COLS, removed)
 
     class_to_idx = {name: i for i, name in enumerate(class_names)}
     with open(C.MANIFEST_DIR / "class_index.json", "w") as fh:
@@ -349,7 +406,15 @@ def run(apply: bool = False, skip_dedup: bool = False) -> dict:
 
     class_names = assign_splits(kept, seed=C.SEED)
     summary = write_outputs(kept, removed, class_names)
+
+    # Stage 5: shrink the oversized unlabeled public_test folder to match the
+    # val split size (seeded -> reproducible across teammates).
+    val_count = summary["split_counts"]["val"]
+    summary["public_test_reduction"] = reduce_public_test(val_count, apply=apply)
+
     summary["mode"] = "APPLIED" if apply else "DRY_RUN"
+    with open(C.MANIFEST_DIR / "split_summary.json", "w") as fh:
+        json.dump(summary, fh, indent=2)
     return summary
 
 

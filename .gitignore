@@ -26,6 +26,16 @@ data/_backup/
 /data.yaml
 /dataset_config.json
 
+# --- Datasets are large — never pushed (raw video test folder) ---
+data/raw/Test_Video/
+
+# --- Markdown: only README.md is versioned; other notes stay local ---
+/*.md
+!/README.md
+/docs/DATA_PIPELINE.md
+/docs/eda_best_practices.md
+/docs/PIPELINE_WALKTHROUGH.md
+
 # --- Python artifacts ---
 __pycache__/
 *.py[cod]
