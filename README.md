@@ -1,164 +1,169 @@
-# BEE_HERo
+# Bee-A-Hero
 
-End-to-end **dataset cleaning + EDA + CV-readiness pipeline** for an iNaturalist-style
-insect image dataset, with a focus on retaining all **Insecta** species and tagging the
-**bee** families as a subset.
+A computer-vision system that watches pomegranate flowers, detects and tracks the
+insects that visit them, tells pollinators from non-pollinators, and turns those
+visits into a quantitative pollination signal. It starts from object detection and
+tracking and builds up toward linking insect activity to pollination and yield.
 
-> **Dataset reality:** this is an **image-classification** dataset (per-species folders,
-> taxonomy-encoded names), **not** object detection. There are **no bounding boxes**, so
-> detection-only steps are executed as their classification equivalents and bbox-specific
-> items are marked N/A.
+The project runs in two stages:
 
-## Status
-✅ **Data-ready pipeline rebuilt & verified (2026-07-01).** Clean, script-driven,
-reproducible (seed=42), fully **non-destructive** (removed images are *moved* to
-`data/_backup/removed/`, never deleted). Entry point: **`notebooks/00_data_ready.ipynb`**
-→ EDA in **`notebooks/01_eda.ipynb`**. Reusable logic in
-`src/data_pipeline/{inaturalist_prep,label_tools,eda}.py`. Result snapshot
-(figures + report JSONs) for review: **`docs/results/`**.
+1. **Data stage** — turn the raw iNaturalist archive into a clean, balanced,
+   fully-labelled dataset (the foundation for the models).
+2. **CV stage** — train a flower detector and a two-stage insect
+   detector/classifier, then track insects through video and count how many
+   times each flower is visited.
 
-### Getting the dataset (required before running)
-The raw images are **git-ignored** (too large to version), so a fresh clone has
-an empty `data/` tree. Download the iNaturalist 2021 archives and extract them so
-the layout is:
+---
+
+## What it does
+
+Given a video of flowers, the pipeline answers three questions:
+
+- **Where are the flowers?** — a single-class YOLO26 detector marks each flower
+  and gives it a stable ID (`flower_1`, `flower_2`, …).
+- **What is visiting them?** — insects are detected and tracked frame-to-frame
+  with BoT-SORT, then each track is classified as **pollinator** or
+  **non-pollinator** by an iNaturalist-pretrained classifier.
+- **How much?** — every time a tracked insect enters a flower's region it counts
+  as a visit, producing a per-flower tally:
+
+  ```
+  flower_id   total   pollinator   non_pollinator
+  flower_1      2          2              0
+  flower_2      3          2              1
+  ```
+
+## Architecture
+
 ```
-data/raw/iNaturist/train_mini/   (+ train_mini.json)
-data/raw/iNaturist/val/          (+ val.json)
-data/raw/iNaturist/public_test/  (+ public_test.json)
+                ┌─────────────────────┐
+ video frame ──▶│ Flower detector      │─▶ flower ROIs (+ IDs)
+                │ YOLO26 (1 class)     │
+                └─────────────────────┘
+                ┌─────────────────────┐        ┌───────────────────────┐
+ video frame ──▶│ Insect detector      │─track─▶│ Pollinator classifier │
+                │ YOLO26 (1 class)     │        │ iNat21-pretrained     │
+                │ + BoT-SORT tracking  │        └───────────┬───────────┘
+                └─────────────────────┘                    │
+                            └───────────── visit logic ─────┘
+                                   (insect enters flower ROI = 1 visit)
+                                            │
+                                            ▼
+                              per-flower visit dataframe + annotated video
 ```
-Source: <https://github.com/visipedia/inat_comp/tree/master/2021>. The pipeline
-checks for this and prints these instructions if the data is missing.
 
-### Quick start
-```bash
-bash scripts/setup_env.sh                     # create .venv + install pinned deps
-source .venv/bin/activate
-jupyter nbconvert --to notebook --execute notebooks/00_data_ready.ipynb --inplace
-jupyter nbconvert --to notebook --execute notebooks/01_eda.ipynb --inplace
-```
-Because everything is seeded (`SEED=42`), every teammate reproduces the **exact
-same** removed images, splits, labels, and `public_test` subset.
+Detection and classification are deliberately split: single-class detection is
+easy and scores a high mAP, while the harder pollinator-vs-other decision is
+handled by a classifier that was pretrained on iNaturalist — the same domain as
+our data — so it starts from strong insect features.
 
-## Dataset
-- **Source:** iNaturalist (`train_mini.tar.gz`, `val.tar.gz`, `public_test.tar.gz`).
-- **Location:** all raw data (archives + extracted `train_mini/`, `val/`, `public_test/`) lives under `data/raw/iNaturist/`.
-- **Folder naming:** `ID_Kingdom_Phylum_Class_Order_Family_Genus_species`.
-- **Classes (`nc`):** **2526** unique Insecta species.
-- **Orders represented:** 17.
+## Results
 
-**Model-ready split** — the labeled images (`train_mini` + `val`, pooled) are exact-duplicate
-de-duplicated (md5) and stratified per species into a **70/15/15** train/val/test split
-(largest-remainder, no truncation). The split is a **manifest** — images are never moved
-between split folders, so there is no duplication or cross-split leakage:
+| Model | Task | Metric | Score |
+|-------|------|--------|-------|
+| Flower detector (YOLO26n) | flower detection | mAP@0.5 | **0.917** |
+| Flower detector (YOLO26n) | flower detection | mAP@0.5:0.95 | 0.805 |
+| Insect detector (YOLO26n) | insect detection | mAP@0.5 | produced by `run_cv.sh` |
+| Insect classifier (iNat21) | pollinator / non-pollinator | balanced acc | produced by `run_cv.sh` |
 
-| Split | Images | Share |
-|-------|--------|-------|
-| `train` | 106,077 | 70% |
-| `val` | 22,734 | 15% |
-| `test` | 22,734 | 15% |
-| **Total (labeled)** | **151,545** | 100% |
+Data stage: **2,526** Insecta classes, **151,545** labelled images, a clean
+**70 / 15 / 15** train/val/test split, zero corrupt images, zero cross-split
+leakage. Figures and reports are in `docs/results/`.
 
-> **Before splitting:** `train_mini` (126,300 imgs) + `val` (25,260) = **151,560** labeled Insecta
-> images across **2526** species; **15** exact duplicates removed during dedup → **151,545**.
->
-> **`public_test` (500,000 flat, *unlabeled* images) is NOT part of this split.** It has no labels
-> (`annotations: 0`), so it can't be trained/evaluated on — it's kept aside for
-> inference / leaderboard submission only.
+## Repository structure
 
-- Non-Insecta folders removed (moved to backup): **230 per split** (13,800 images).
-- Corrupt images: **0** (full PIL verify over all 151,545 images).
-- Split assignment/manifest: `data/interim/manifests/split_manifest.csv`; clean per-split
-  COCO labels: `data/interim/labels/{train,val,test}.json`.
-
-## Bee subset
-Tagged where `Order == Hymenoptera` and `Family` ∈ {Andrenidae, Apidae, Colletidae,
-Halictidae, Megachilidae, Melittidae, Stenotritidae}. The `is_bee` flag is recorded per
-image in the manifests.
-
-## Pipeline phases
-1. **Semantic filtering & class cleansing** — keep a species folder iff taxonomic `Class == Insecta`; tag bee families.
-2. **Annotation alignment & validation** — labels derived from parent species folder; integrity-verify all images; write manifests. (Bbox coordinate validation: N/A.)
-3. **Exploratory data analysis** — class/order distributions, resolution & aspect-ratio analysis, sample grid.
-4. **CV readiness & augmentation strategy** — split consistency check + augmentation blueprint + 6 GB-VRAM training recipe.
-5. **Folder integrity & path mapping** — original hierarchy preserved in place; archives untouched; configs written.
-6. **Quality evaluation** — completeness, class balance, and cross-split leakage scan.
-
-## Quality summary (Phase 6)
-- **Completeness:** 100.0% of retained images are label-aligned.
-- **Class balance:** 60 images per class (min = max = 60), imbalance ratio **1.0**, Gini **0.0**
-  → standard CrossEntropy with light class weights is sufficient.
-- **Split overlap:** every one of the 2526 classes appears in all of train/val/test.
-- **Leakage:** 0 cross-split duplicate paths; 0 perceptual near-duplicate groups (sampled).
-
-## Training recipe (6 GB VRAM)
-- Image size 224, batch 32 (AMP can push to 48–64), `num_workers=4–6`, `pin_memory=True`,
-  `persistent_workers=True`, `prefetch_factor=2`.
-- **Augmentation (Albumentations):** RandomResizedCrop(224), HorizontalFlip, ShiftScaleRotate,
-  ColorJitter/HueSaturationValue + RandomBrightnessContrast, CoarseDropout, plus batch-level
-  **MixUp/CutMix**. Always `Normalize(ImageNet stats)`. (Mosaic is detection-oriented — skip.)
-- Use `WeightedRandomSampler` only if imbalance becomes severe (not needed here).
-
-## Layout
 ```
 Bee-A-Hero/
-├── RUN_ME.py                    # one-click entrypoint (repo root)
-├── data/
-│   └── raw/
-│       └── iNaturist/           # ALL raw data lives here:
-│           ├── train_mini/      #   per-species folders (filtered to Insecta)
-│           ├── val/             #   per-species folders (filtered to Insecta)
-│           ├── public_test/     #   500k flat, unlabeled .jpgs
-│           └── *.tar.gz         #   original archives — DO NOT TOUCH
-├── data.yaml                    # nc=2526 + ordered class names (path: -> data/raw/iNaturist)
-├── dataset_config.json
+├── data/                       # datasets + generated artifacts (git-ignored, see below)
+│   ├── raw/                    # source data: iNaturist/, Flower/, BEE_coco/, Test_Video/
+│   ├── interim/                # manifests, labels, EDA figures, weights, cv runs
+│   └── processed/
 ├── src/
-│   ├── data_pipeline/
-│   │   ├── pipeline.py          # clean / filter / EDA / manifest pipeline
-│   │   ├── reproduce_bee_hero.py# extract → label → split orchestrator
-│   │   └── resplit_option3.py   # perceptual-dedup + stratified split
-│   └── ml_models/
-│       └── bee_hero_dataset.py  # PyTorch Dataset/DataLoader, augmentation, MixUp/CutMix
+│   ├── config.py               # central paths, seed, split ratios, taxonomy targets
+│   ├── data_pipeline/          # data stage
+│   │   ├── inaturalist_prep.py #   Insecta filter · dedup · 70/15/15 split
+│   │   ├── label_tools.py      #   label regeneration + integrity validation
+│   │   └── eda.py              #   EDA / quality primitives
+│   └── cv_engine/              # CV stage
+│       ├── prepare_flower.py   #   Flower classification → YOLO detection (GrabCut)
+│       ├── prepare_insect.py   #   iNat + BEE.v8i → detector + classifier datasets
+│       ├── train.py            #   YOLO26 fine-tuning
+│       ├── train_classifier.py #   iNat21-pretrained pollinator classifier
+│       ├── visit_counter.py    #   tracking + flower-visit counting
+│       └── weights.py          #   publish/download trained weights (HF Hub)
 ├── notebooks/
-│   └── bee_hero_dataready.ipynb
-├── docs/                        # continue.md, SETUP_README.txt
-└── _pipeline/                   # data artifacts (read/written by the code above)
-    ├── REPORT.md                # full phase-by-phase report
-    ├── manifest_all.csv         # [split, path, class_id, folder, order, family, genus, species, is_bee]
-    ├── manifest_train_mini.csv
-    ├── manifest_val.csv
-    ├── phase4_split_check.json
-    ├── phase6_quality.json
-    ├── splits/                  # train/val/test lists + split_assignments.csv + phash cache
-    └── eda/                     # dist_by_order, class_size_hist, resolution_scatter,
-                                 # aspect_ratio_hist, sample_grid (.png) + summary csv/json
+│   ├── 00_data_ready.ipynb     # data-stage gate (inspect → clean → validate → report)
+│   └── 01_eda.ipynb            # exploratory data analysis
+├── scripts/
+│   ├── setup_env.sh            # data-stage environment
+│   ├── setup_cv.sh             # CV-stage environment (torch / ultralytics / timm)
+│   ├── run_pipeline.sh         # run the data stage end-to-end
+│   └── run_cv.sh               # run the CV stage end-to-end
+├── docs/results/               # result snapshot (figures + report JSONs)
+└── tests/
 ```
 
-## How to re-run (current pipeline)
+## Getting the datasets
+
+The datasets are large and are **not** stored in git, so a fresh clone has an
+empty `data/` tree. Download each and place it as shown:
+
+| Dataset | Place under | Source |
+|---------|-------------|--------|
+| iNaturalist 2021 | `data/raw/iNaturist/{train_mini,val,public_test}/` (+ their `.json`) | https://github.com/visipedia/inat_comp/tree/master/2021 |
+| Flower Classification | `data/raw/Flower/{Training,Validation,Testing} Data/<class>/` | Kaggle "Flower Classification" |
+| BEE.v8i (bee boxes) | `data/raw/BEE_coco/{train,valid,test}/` (COCO export) | Roboflow Universe "BEE" |
+| Test videos | `data/raw/Test_Video/*.mp4` | your own footage / test clips |
+
+Every stage checks for its inputs and prints what is missing, so you can run with
+whatever you have (e.g. the insect step still works without `BEE_coco`).
+
+## Setup
+
 ```bash
-bash scripts/setup_env.sh && source .venv/bin/activate
-
-# option A — one command end-to-end
-bash scripts/run_pipeline.sh
-
-# option B — step by step
-python -m src.data_pipeline.inaturalist_prep --apply      # filter + dedup + 70/15/15
-python -m src.data_pipeline.label_tools                   # regenerate + validate labels
-jupyter nbconvert --to notebook --execute notebooks/00_data_ready.ipynb --inplace
-jupyter nbconvert --to notebook --execute notebooks/01_eda.ipynb --inplace
+bash scripts/setup_env.sh     # creates .venv, installs the data-stage dependencies
+bash scripts/setup_cv.sh      # adds the CV-stage dependencies (needs an NVIDIA GPU to train)
+source .venv/bin/activate
 ```
-Every step is **idempotent** and paths are repo-root-relative (`src/config.py`). Removed
-images are moved to `data/_backup/removed/` (never deleted); raw label JSONs are backed up
-under `data/_backup/original_labels/`. See `docs/DATA_PIPELINE.md` for full detail.
 
-> **Legacy note.** The earlier `RUN_ME.py` / `_pipeline/` / `data.yaml` workflow (80/10/10,
-> Windows paths) is superseded by the above; `_pipeline/` outputs are now git-ignored and
-> archived in the backup.
+## Running
 
-## Daily Activities
-- **2026-06-30 — Raul/Data —** Reorganized the repo so all raw data (archives + extracted
-  `train_mini/`, `val/`, `public_test/`) lives under `data/raw/iNaturist/`. Repointed every
-  script (`pipeline.py`, `reproduce_bee_hero.py`, `resplit_option3.py`, `bee_hero_dataset.py`,
-  `RUN_ME.py`) to read splits/archives from there; code stays in `src/`, artifacts in
-  `_pipeline/`. Updated `data.yaml` `path:`, `dataset_config.json` `root`, and `.gitignore`.
-  Existing manifests/splits remain valid (paths resolve into the new data dir) — verified the
-  loader builds **2526** classes / train-val-test = 121,226 / 15,157 / 15,155.
+**Data stage** — clean, split and validate the dataset:
+
+```bash
+bash scripts/run_pipeline.sh
+```
+
+**CV stage** — train the detectors + classifier and count visits on the test
+videos (idempotent: finished stages are skipped on re-run):
+
+```bash
+bash scripts/run_cv.sh
+```
+
+**Pretrained weights** — skip training and run inference directly:
+
+```bash
+python -m src.cv_engine.weights --download            # pull trained weights from the Hub
+python -m src.cv_engine.visit_counter --video data/raw/Test_Video/clip.mp4 \
+    --flower-weights   data/interim/weights/flower_yolo26.pt \
+    --insect-weights   data/interim/weights/insect_yolo26.pt \
+    --classifier-weights data/interim/weights/insect_classifier.pt --save-video
+```
+
+## Reproducibility
+
+Everything is seeded (`SEED = 42` in `src/config.py`) and deterministic: the same
+raw data yields the same removed images, splits, labels, and video subset on any
+machine. Paths are resolved relative to the repository root, so there is nothing
+machine-specific to configure.
+
+## Team
+
+| Member | Role |
+|--------|------|
+| **Asif Habilov** | Team lead — planning, research direction, ML/CV engineering, QA |
+| **Raul Ibrahimov** | Data research & ML engineering — dataset curation, model training |
+| **Narmin Dirayeva** | LLM & ML engineering — reporting, model development |
+| **Khaver** | Data & LLM — collection, annotation, quality |
+```
