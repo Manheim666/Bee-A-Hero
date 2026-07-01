@@ -14,16 +14,30 @@ insect image dataset, with a focus on retaining all **Insecta** species and tagg
 reproducible (seed=42), fully **non-destructive** (removed images are *moved* to
 `data/_backup/removed/`, never deleted). Entry point: **`notebooks/00_data_ready.ipynb`**
 → EDA in **`notebooks/01_eda.ipynb`**. Reusable logic in
-`src/data_pipeline/{inaturalist_prep,label_tools,eda}.py`; methodology in
-`docs/DATA_PIPELINE.md` and `docs/eda_best_practices.md`.
+`src/data_pipeline/{inaturalist_prep,label_tools,eda}.py`. Result snapshot
+(figures + report JSONs) for review: **`docs/results/`**.
 
-Quick start:
+### Getting the dataset (required before running)
+The raw images are **git-ignored** (too large to version), so a fresh clone has
+an empty `data/` tree. Download the iNaturalist 2021 archives and extract them so
+the layout is:
+```
+data/raw/iNaturist/train_mini/   (+ train_mini.json)
+data/raw/iNaturist/val/          (+ val.json)
+data/raw/iNaturist/public_test/  (+ public_test.json)
+```
+Source: <https://github.com/visipedia/inat_comp/tree/master/2021>. The pipeline
+checks for this and prints these instructions if the data is missing.
+
+### Quick start
 ```bash
 bash scripts/setup_env.sh                     # create .venv + install pinned deps
 source .venv/bin/activate
 jupyter nbconvert --to notebook --execute notebooks/00_data_ready.ipynb --inplace
 jupyter nbconvert --to notebook --execute notebooks/01_eda.ipynb --inplace
 ```
+Because everything is seeded (`SEED=42`), every teammate reproduces the **exact
+same** removed images, splits, labels, and `public_test` subset.
 
 ## Dataset
 - **Source:** iNaturalist (`train_mini.tar.gz`, `val.tar.gz`, `public_test.tar.gz`).
