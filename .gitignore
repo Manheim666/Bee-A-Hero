@@ -22,6 +22,10 @@ _pipeline/
 # --- Backups (Phase 3 safety copies) ---
 data/_backup/
 
+# --- Legacy scripts may regenerate these at root; keep root clean ---
+/data.yaml
+/dataset_config.json
+
 # --- Python artifacts ---
 __pycache__/
 *.py[cod]
