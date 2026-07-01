@@ -1,0 +1,58 @@
+{
+  "flower_detector_mAP50": 0.9176,
+  "insect_detector_mAP50": 0.8939,
+  "classifier": {
+    "acc": 0.9783,
+    "balanced_acc": 0.9778,
+    "pollinator_recall": 0.9749,
+    "non_pollinator_recall": 0.9806
+  },
+  "visits": {
+    "videoplayback (1)": [
+      {
+        "flower_id": "flower_1",
+        "total": "6",
+        "pollinator": "6",
+        "non_pollinator": "0"
+      },
+      {
+        "flower_id": "flower_2",
+        "total": "1",
+        "pollinator": "1",
+        "non_pollinator": "0"
+      }
+    ],
+    "videoplayback (2)": [
+      {
+        "flower_id": "flower_1",
+        "total": "16",
+        "pollinator": "9",
+        "non_pollinator": "7"
+      }
+    ],
+    "videoplayback (3)": [
+      {
+        "flower_id": "flower_1",
+        "total": "16",
+        "pollinator": "14",
+        "non_pollinator": "2"
+      }
+    ],
+    "videoplayback (4)": [
+      {
+        "flower_id": "flower_1",
+        "total": "1",
+        "pollinator": "1",
+        "non_pollinator": "0"
+      }
+    ],
+    "videoplayback": [
+      {
+        "flower_id": "flower_1",
+        "total": "6",
+        "pollinator": "6",
+        "non_pollinator": "0"
+      }
+    ]
+  }
+}

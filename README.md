@@ -62,9 +62,12 @@ our data — so it starts from strong insect features.
 | Model | Task | Metric | Score |
 |-------|------|--------|-------|
 | Flower detector (YOLO26n) | flower detection | mAP@0.5 | **0.917** |
-| Flower detector (YOLO26n) | flower detection | mAP@0.5:0.95 | 0.805 |
-| Insect detector (YOLO26n) | insect detection | mAP@0.5 | produced by `run_cv.sh` |
-| Insect classifier (iNat21) | pollinator / non-pollinator | balanced acc | produced by `run_cv.sh` |
+| Insect detector (YOLO26n) | insect detection | mAP@0.5 | **0.894** |
+| Insect classifier (ConvNeXt-L, iNat21) | pollinator / non-pollinator | balanced acc | **0.978** |
+
+Visit counting was run on the test videos; per-flower tallies, the metrics
+summary and a sample annotated frame are in `docs/results/cv/`. Example output —
+one clip logged `flower_1: 16 visits (14 pollinator, 2 non-pollinator)`.
 
 Data stage: **2,526** Insecta classes, **151,545** labelled images, a clean
 **70 / 15 / 15** train/val/test split, zero corrupt images, zero cross-split
