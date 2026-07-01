@@ -10,10 +10,10 @@ Reads the ImageFolder built by ``prepare_insect.export_classifier_crops``:
 Class imbalance (pollinator >> non) is handled with a WeightedRandomSampler.
 
 CLI:
+    python -m src.cv_engine.train_classifier --freeze --epochs 12
+    # server (full fine-tune, bigger backbone):
     python -m src.cv_engine.train_classifier \
-        --model convnext_large_mlp.laion2b_ft_augreg_inat21 --freeze --epochs 12
-    # server (full fine-tune, bigger model):
-    python -m src.cv_engine.train_classifier --model eva02_large_patch14_clip_336.merged2b_ft_inat21 --epochs 15
+        --model hf-hub:timm/eva02_large_patch14_clip_336.merged2b_ft_inat21 --epochs 15
 """
 from __future__ import annotations
 
@@ -38,7 +38,9 @@ from src import config as C
 
 CLS_DIR = C.INTERIM_DIR / "insect_cls"
 RUNS = C.INTERIM_DIR / "cv_runs"
-DEFAULT_MODEL = "convnext_large_mlp.laion2b_ft_augreg_inat21"
+# iNaturalist-2021-pretrained backbone, loaded straight from the HF Hub (the
+# ``hf-hub:`` prefix is required — the tag is not in timm's local registry).
+DEFAULT_MODEL = "hf-hub:timm/convnext_large_mlp.laion2b_ft_augreg_inat21"
 
 
 def _loaders(model, batch):
@@ -83,7 +85,7 @@ def evaluate(model, loader, device) -> dict:
 
 
 def train(model_name: str = DEFAULT_MODEL, name: str = "insect_classifier",
-          epochs: int = 12, batch: int = 32, lr: float = 3e-4, freeze: bool = False) -> dict:
+          epochs: int = 12, batch: int = 8, lr: float = 3e-4, freeze: bool = False) -> dict:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = timm.create_model(model_name, pretrained=True, num_classes=2)
     if freeze:                                   # linear-probe: train the head only
@@ -130,7 +132,7 @@ def main() -> None:
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--name", default="insect_classifier")
     ap.add_argument("--epochs", type=int, default=12)
-    ap.add_argument("--batch", type=int, default=32)
+    ap.add_argument("--batch", type=int, default=8)
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--freeze", action="store_true", help="linear-probe (head only)")
     args = ap.parse_args()
