@@ -10,7 +10,20 @@ insect image dataset, with a focus on retaining all **Insecta** species and tagg
 > items are marked N/A.
 
 ## Status
-✅ **Pipeline COMPLETED_OK** (last run 2026-06-29). Archives left untouched — everything is reversible.
+✅ **Data-ready pipeline rebuilt & verified (2026-07-01).** Clean, script-driven,
+reproducible (seed=42), fully **non-destructive** (removed images are *moved* to
+`data/_backup/removed/`, never deleted). Entry point: **`notebooks/00_data_ready.ipynb`**
+→ EDA in **`notebooks/01_eda.ipynb`**. Reusable logic in
+`src/data_pipeline/{inaturalist_prep,label_tools,eda}.py`; methodology in
+`docs/DATA_PIPELINE.md` and `docs/eda_best_practices.md`.
+
+Quick start:
+```bash
+bash scripts/setup_env.sh                     # create .venv + install pinned deps
+source .venv/bin/activate
+jupyter nbconvert --to notebook --execute notebooks/00_data_ready.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/01_eda.ipynb --inplace
+```
 
 ## Dataset
 - **Source:** iNaturalist (`train_mini.tar.gz`, `val.tar.gz`, `public_test.tar.gz`).
@@ -19,25 +32,29 @@ insect image dataset, with a focus on retaining all **Insecta** species and tagg
 - **Classes (`nc`):** **2526** unique Insecta species.
 - **Orders represented:** 17.
 
-**Model-ready split** — the labeled images (`train_mini` + `val`, pooled) are perceptually
-de-duplicated and stratified by species (group-safe) into an **80/10/10** train/val/test split:
+**Model-ready split** — the labeled images (`train_mini` + `val`, pooled) are exact-duplicate
+de-duplicated (md5) and stratified per species into a **70/15/15** train/val/test split
+(largest-remainder, no truncation). The split is a **manifest** — images are never moved
+between split folders, so there is no duplication or cross-split leakage:
 
 | Split | Images | Share |
 |-------|--------|-------|
-| `train` | 121,226 | 80% |
-| `val` | 15,157 | 10% |
-| `test` | 15,155 | 10% |
-| **Total (labeled)** | **151,538** | 100% |
+| `train` | 106,077 | 70% |
+| `val` | 22,734 | 15% |
+| `test` | 22,734 | 15% |
+| **Total (labeled)** | **151,545** | 100% |
 
 > **Before splitting:** `train_mini` (126,300 imgs) + `val` (25,260) = **151,560** labeled Insecta
-> images across **2526** species; ~22 exact duplicates dropped during dedup.
+> images across **2526** species; **15** exact duplicates removed during dedup → **151,545**.
 >
 > **`public_test` (500,000 flat, *unlabeled* images) is NOT part of this split.** It has no labels
-> (just numbered `.jpg`s), so it can't be trained/evaluated on — it's kept aside for
+> (`annotations: 0`), so it can't be trained/evaluated on — it's kept aside for
 > inference / leaderboard submission only.
 
-- Folders audited: **19,825** → kept **5,052**, removed **14,773** non-insect.
-- Corrupt images removed: **0** (every retained image opened + verified with PIL).
+- Non-Insecta folders removed (moved to backup): **230 per split** (13,800 images).
+- Corrupt images: **0** (full PIL verify over all 151,545 images).
+- Split assignment/manifest: `data/interim/manifests/split_manifest.csv`; clean per-split
+  COCO labels: `data/interim/labels/{train,val,test}.json`.
 
 ## Bee subset
 Tagged where `Order == Hymenoptera` and `Family` ∈ {Andrenidae, Apidae, Colletidae,
@@ -56,8 +73,8 @@ image in the manifests.
 - **Completeness:** 100.0% of retained images are label-aligned.
 - **Class balance:** 60 images per class (min = max = 60), imbalance ratio **1.0**, Gini **0.0**
   → standard CrossEntropy with light class weights is sufficient.
-- **Split overlap:** 0 species only-in-train, 0 only-in-val (perfectly aligned).
-- ⚠️ **Leakage:** 1 cross-split duplicate group found (perceptual pHash). Review before training.
+- **Split overlap:** every one of the 2526 classes appears in all of train/val/test.
+- **Leakage:** 0 cross-split duplicate paths; 0 perceptual near-duplicate groups (sampled).
 
 ## Training recipe (6 GB VRAM)
 - Image size 224, batch 32 (AMP can push to 48–64), `num_workers=4–6`, `pin_memory=True`,
@@ -102,15 +119,26 @@ Bee-A-Hero/
                                  # aspect_ratio_hist, sample_grid (.png) + summary csv/json
 ```
 
-## How to re-run
+## How to re-run (current pipeline)
 ```bash
-cd "/c/Users/narim/Desktop/Bee-A-Hero"
-rm -f _pipeline/STATUS.txt _pipeline/pipeline.log
-python src/data_pipeline/pipeline.py > _pipeline/pipeline_console.log 2>&1 &
-# poll _pipeline/STATUS.txt until it reads COMPLETED_OK (~40–70 min)
+bash scripts/setup_env.sh && source .venv/bin/activate
+
+# option A — one command end-to-end
+bash scripts/run_pipeline.sh
+
+# option B — step by step
+python -m src.data_pipeline.inaturalist_prep --apply      # filter + dedup + 70/15/15
+python -m src.data_pipeline.label_tools                   # regenerate + validate labels
+jupyter nbconvert --to notebook --execute notebooks/00_data_ready.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/01_eda.ipynb --inplace
 ```
-The pipeline is idempotent: it re-walks everything, re-removes non-insect folders, keeps
-insects, and rebuilds manifests. The `.tar.gz` archives are never modified.
+Every step is **idempotent** and paths are repo-root-relative (`src/config.py`). Removed
+images are moved to `data/_backup/removed/` (never deleted); raw label JSONs are backed up
+under `data/_backup/original_labels/`. See `docs/DATA_PIPELINE.md` for full detail.
+
+> **Legacy note.** The earlier `RUN_ME.py` / `_pipeline/` / `data.yaml` workflow (80/10/10,
+> Windows paths) is superseded by the above; `_pipeline/` outputs are now git-ignored and
+> archived in the backup.
 
 ## Daily Activities
 - **2026-06-30 — Raul/Data —** Reorganized the repo so all raw data (archives + extracted
