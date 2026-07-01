@@ -1,6 +1,27 @@
-# Flower dataset pipeline (src/data_pipeline/flower/) needs these:
-numpy
-opencv-python
+# ============================================================
+# Bee-A-Hero — Python dependencies
+# Set up a project virtualenv with:  bash scripts/setup_env.sh
+# Pins verified on Python 3.14 (wheels available for every entry).
+# ============================================================
 
-# The iNaturalist/bee pipeline auto-installs its own deps at runtime
-# (see RUN_ME.py: pillow, torch, torchvision, imagehash, ...).
+# --- Core data preparation + EDA -------------------------------------------
+#     src/data_pipeline/{inaturalist_prep,label_tools,eda}.py
+#     notebooks/00_data_ready.ipynb, notebooks/01_eda.ipynb
+numpy==2.5.0
+pandas==3.0.3
+pillow==12.2.0
+matplotlib==3.11.0
+seaborn==0.13.2
+scikit-learn==1.9.0
+tqdm==4.68.3
+ImageHash==4.3.2          # perceptual (p)hash — near-duplicate detection
+
+# --- Flower dataset pipeline (src/data_pipeline/flower/) --------------------
+opencv-python==4.13.0.92
+
+# --- Notebook execution / reproducibility (Phase 12 fresh-env run) ----------
+nbformat==5.10.4
+nbclient==0.11.0
+nbconvert==7.17.1
+ipykernel==7.3.0
+jupyter-core==5.9.1
