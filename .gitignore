@@ -16,6 +16,12 @@ data/processed/*
 data/interim/*
 !data/interim/.gitkeep
 
+# --- Legacy/regenerable pipeline outputs (kept on disk, untracked; clean rebuild lands in data/interim/) ---
+_pipeline/
+
+# --- Backups (Phase 3 safety copies) ---
+data/_backup/
+
 # --- Python artifacts ---
 __pycache__/
 *.py[cod]
