@@ -69,6 +69,18 @@ def scan_corrupted(paths, workers: int | None = None, chunk: int = 64) -> list[t
 # --------------------------------------------------------------------------- #
 # Per-image statistics (sampled — full set is 151k images)
 # --------------------------------------------------------------------------- #
+def _laplacian_var(gray: np.ndarray) -> float:
+    """Variance of the Laplacian — a standard sharpness/blur proxy (numpy-only).
+
+    Low values indicate blur (little high-frequency energy). Equivalent to the
+    OpenCV ``cv2.Laplacian(...).var()`` blur score without the cv2 dependency.
+    """
+    g = gray
+    lap = (-4.0 * g[1:-1, 1:-1]
+           + g[:-2, 1:-1] + g[2:, 1:-1] + g[1:-1, :-2] + g[1:-1, 2:])
+    return float(lap.var()) if lap.size else 0.0
+
+
 def _meta_one(path_str: str):
     try:
         with Image.open(path_str) as im:
@@ -77,6 +89,7 @@ def _meta_one(path_str: str):
             gray = np.asarray(im.convert("L"), dtype=np.float32)
             brightness = float(gray.mean())
             contrast = float(gray.std())
+            blur = _laplacian_var(gray)
             is_gray = mode in ("L", "1")
             if mode == "RGB":
                 rgb = np.asarray(im, dtype=np.int16)
@@ -85,9 +98,9 @@ def _meta_one(path_str: str):
                     db = np.abs(rgb[..., 1] - rgb[..., 2]).mean()
                     is_gray = bool(dg < 2 and db < 2)
             blank = bool(contrast < 1.0)
-        return (path_str, w, h, mode, brightness, contrast, int(is_gray), int(blank))
+        return (path_str, w, h, mode, brightness, contrast, blur, int(is_gray), int(blank))
     except Exception:
-        return (path_str, None, None, None, None, None, None, None)
+        return (path_str, None, None, None, None, None, None, None, None)
 
 
 def sample_image_stats(paths, sample: int | None = 6000, seed: int = C.SEED,
@@ -106,7 +119,8 @@ def sample_image_stats(paths, sample: int | None = 6000, seed: int = C.SEED,
         for r in ex.map(_meta_one, paths, chunksize=32):
             rows.append(r)
     df = pd.DataFrame(rows, columns=["path", "width", "height", "mode",
-                                     "brightness", "contrast", "is_gray", "blank"])
+                                     "brightness", "contrast", "blur",
+                                     "is_gray", "blank"])
     df["aspect"] = df["width"] / df["height"]
     return df
 
