@@ -62,7 +62,7 @@ our data — so it starts from strong insect features.
 | Model | Task | Metric | Score |
 |-------|------|--------|-------|
 | Flower detector (YOLO26n) | flower detection | mAP@0.5 | **0.917** |
-| Insect detector (YOLO26n) | insect detection | mAP@0.5 | **0.894** |
+| Insect detector (YOLO26n) | insect detection | mAP@0.5 | **0.900** |
 | Insect classifier (ConvNeXt-L, iNat21) | pollinator / non-pollinator | balanced acc | **0.978** |
 
 Visit counting was run on the test videos; per-flower tallies, the metrics
