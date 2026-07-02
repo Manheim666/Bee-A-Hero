@@ -32,7 +32,7 @@ WEIGHTS_DIR = C.INTERIM_DIR / "weights"
 
 def train(data: str, name: str, model: str = "yolo26n.pt", epochs: int = 60,
           imgsz: int = 640, batch: int = 16, device: int | str = 0,
-          patience: int = 15, resume: bool = False) -> dict:
+          patience: int = 15, resume: bool = False, scale: float = 0.5) -> dict:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     # prefer a local pretrained copy if present (avoids re-download to cwd)
     local = WEIGHTS_DIR / model
@@ -41,6 +41,9 @@ def train(data: str, name: str, model: str = "yolo26n.pt", epochs: int = 60,
         data=data, epochs=epochs, imgsz=imgsz, batch=batch, device=device,
         project=str(RUNS_DIR), name=name, seed=C.SEED, deterministic=True,
         amp=True, patience=patience, exist_ok=True, resume=resume, verbose=True,
+        # scale jitter: larger range makes the detector see objects at more
+        # scales (incl. small) -> tighter boxes on small/video insects.
+        scale=scale,
     )
     best = RUNS_DIR / name / "weights" / "best.pt"
     # report validation mAP
@@ -63,11 +66,12 @@ def main() -> None:
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--patience", type=int, default=15)
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--scale", type=float, default=0.5, help="scale-jitter gain (aug)")
     args = ap.parse_args()
     import json
     print(json.dumps(train(args.data, args.name, args.model, args.epochs,
                            args.imgsz, args.batch, patience=args.patience,
-                           resume=args.resume), indent=2))
+                           resume=args.resume, scale=args.scale), indent=2))
 
 
 if __name__ == "__main__":
