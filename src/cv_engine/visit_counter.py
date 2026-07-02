@@ -1,8 +1,9 @@
 """Flower-visit counting on video (two-stage insect recognition).
 
 Pipeline:
-  1. Detect flowers on the first frame (static camera); each gets a stable ID
-     ``flower_1, flower_2, ...`` and its box is dilated into an approach ROI.
+  1. Detect flowers on **every frame** and keep stable IDs across frames via IoU
+     association (handles moving camera/flowers); each flower's box is dilated
+     into an approach ROI (``flower_1, flower_2, ...``).
   2. Detect and track insects across frames with a single-class YOLO26 detector
      + BoT-SORT (one track ID per insect).
   3. Classify each tracked insect crop with the iNaturalist-pretrained classifier
@@ -67,20 +68,75 @@ class Classifier:
         return self.classes[idx]
 
 
-def detect_flowers(model, frame, conf, dilate=0.15):
+def _iou(a, b):
+    ix1, iy1 = max(a[0], b[0]), max(a[1], b[1])
+    ix2, iy2 = min(a[2], b[2]), min(a[3], b[3])
+    iw, ih = max(0, ix2 - ix1), max(0, iy2 - iy1)
+    inter = iw * ih
+    ua = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
+    return inter / ua if ua > 0 else 0.0
+
+
+def _detect_flowers_raw(model, frame, conf, dilate=0.15):
     res = model.predict(frame, conf=conf, verbose=False)[0]
     H, W = frame.shape[:2]
     out = []
-    for i, b in enumerate(res.boxes.xyxy.cpu().numpy(), start=1):
+    for b in res.boxes.xyxy.cpu().numpy():
         x1, y1, x2, y2 = b
         dw, dh = (x2 - x1) * dilate, (y2 - y1) * dilate
-        out.append((f"flower_{i}", (max(0, x1 - dw), max(0, y1 - dh),
-                                    min(W, x2 + dw), min(H, y2 + dh))))
+        out.append((max(0, x1 - dw), max(0, y1 - dh), min(W, x2 + dw), min(H, y2 + dh)))
     return out
 
 
+class FlowerTracker:
+    """Per-frame flower detection with stable IDs across frames (IoU association).
+
+    Handles dynamic video (moving camera/flowers): each frame the flowers are
+    re-detected and matched to existing tracks by IoU so ``flower_1`` stays the
+    same flower as it moves. A short ``max_missed`` grace keeps IDs through brief
+    misses. ``seen`` records every flower ID ever assigned (for the final report).
+    """
+
+    def __init__(self, model, conf, dilate=0.15, iou_thr=0.3, max_missed=30):
+        self.model, self.conf, self.dilate = model, conf, dilate
+        self.iou_thr, self.max_missed = iou_thr, max_missed
+        self.tracks: dict[str, dict] = {}
+        self.next_id = 1
+        self.seen: set[str] = set()
+
+    def update(self, frame):
+        dets = _detect_flowers_raw(self.model, frame, self.conf, self.dilate)
+        used = set()
+        for fid in list(self.tracks):
+            best, bj = self.iou_thr, -1
+            for j, d in enumerate(dets):
+                if j in used:
+                    continue
+                iou = _iou(self.tracks[fid]["box"], d)
+                if iou >= best:
+                    best, bj = iou, j
+            if bj >= 0:
+                self.tracks[fid] = {"box": dets[bj], "missed": 0}
+                used.add(bj)
+            else:
+                self.tracks[fid]["missed"] += 1
+                if self.tracks[fid]["missed"] > self.max_missed:
+                    del self.tracks[fid]
+        for j, d in enumerate(dets):
+            if j not in used:
+                fid = f"flower_{self.next_id}"; self.next_id += 1
+                self.tracks[fid] = {"box": d, "missed": 0}
+                self.seen.add(fid)
+        return self.current()
+
+    def current(self):
+        """Active flower boxes without re-detecting (reused between detect frames)."""
+        return [(fid, t["box"]) for fid, t in self.tracks.items() if t["missed"] == 0]
+
+
 def count_visits(video, flower_weights, insect_weights, classifier_weights,
-                 out_dir: Path, conf=0.25, debounce=20, save_video=False) -> dict:
+                 out_dir: Path, conf=0.25, debounce=20, save_video=False,
+                 flower_interval=5) -> dict:
     from ultralytics import YOLO
     out_dir.mkdir(parents=True, exist_ok=True)
     flower_model, insect_model = YOLO(flower_weights), YOLO(insect_weights)
@@ -90,18 +146,20 @@ def count_visits(video, flower_weights, insect_weights, classifier_weights,
     track_votes: dict[int, Counter] = defaultdict(Counter)   # track_id -> class votes
     last_flower: dict[int, str | None] = {}
     last_visit_frame: dict[tuple[int, str], int] = {}
-    flowers, writer = [], None
+    ftracker = FlowerTracker(flower_model, conf)
+    writer = None
 
     stream = insect_model.track(source=video, stream=True, tracker="botsort.yaml",
                                 persist=True, conf=conf, verbose=False)
     for fi, res in enumerate(stream):
         frame = res.orig_img
-        if fi == 0:
-            flowers = detect_flowers(flower_model, frame, conf)
-            if save_video:
-                h, w = frame.shape[:2]
-                writer = cv2.VideoWriter(str(out_dir / (Path(video).stem + "_annotated.mp4")),
-                                         cv2.VideoWriter_fourcc(*"mp4v"), 25, (w, h))
+        # re-detect flowers every `flower_interval` frames (they move slowly);
+        # reuse the tracked boxes in between -> dynamic but ~interval× faster.
+        flowers = ftracker.update(frame) if fi % flower_interval == 0 else ftracker.current()
+        if fi == 0 and save_video:
+            h, w = frame.shape[:2]
+            writer = cv2.VideoWriter(str(out_dir / (Path(video).stem + "_annotated.mp4")),
+                                     cv2.VideoWriter_fourcc(*"mp4v"), 25, (w, h))
         boxes = res.boxes
         labels: dict[int, str] = {}
         if boxes is not None and boxes.id is not None:
@@ -127,7 +185,7 @@ def count_visits(video, flower_weights, insect_weights, classifier_weights,
     if writer is not None:
         writer.release()
 
-    for fid, _ in flowers:
+    for fid in ftracker.seen:                     # include flowers seen with 0 visits
         visits[fid]
     rows = [{"flower_id": k, **v} for k, v in sorted(visits.items())]
     csv_path = out_dir / (Path(video).stem + "_visits.csv")
@@ -163,12 +221,14 @@ def main() -> None:
     ap.add_argument("--out", default=str(C.INTERIM_DIR / "cv_runs" / "visits"))
     ap.add_argument("--conf", type=float, default=0.25)
     ap.add_argument("--debounce", type=int, default=20)
+    ap.add_argument("--flower-interval", type=int, default=5,
+                    help="re-detect flowers every N frames (dynamic video)")
     ap.add_argument("--save-video", action="store_true")
     args = ap.parse_args()
     import json
     print(json.dumps(count_visits(args.video, args.flower_weights, args.insect_weights,
                                   args.classifier_weights, Path(args.out), args.conf,
-                                  args.debounce, args.save_video), indent=2))
+                                  args.debounce, args.save_video, args.flower_interval), indent=2))
 
 
 if __name__ == "__main__":
