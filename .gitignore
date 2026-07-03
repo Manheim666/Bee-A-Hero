@@ -56,3 +56,7 @@ runs/
 
 # --- CV bee-detection dataset (Roboflow BEE.v8i) ---
 data/raw/BEE_coco/
+
+# graphify output/cache (do not track)
+graphify-out/
+**/graphify-out/
