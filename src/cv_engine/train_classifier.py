@@ -24,8 +24,8 @@ from pathlib import Path
 
 try:
     multiprocessing.set_start_method("fork", force=True)
-except RuntimeError:
-    pass
+except (RuntimeError, ValueError):
+    pass  # fork unavailable (Windows) -> use the default start method
 
 import numpy as np
 import timm

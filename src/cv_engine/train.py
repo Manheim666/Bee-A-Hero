@@ -19,8 +19,8 @@ from pathlib import Path
 # no real training. Force "fork" so workers inherit state cleanly.
 try:
     multiprocessing.set_start_method("fork", force=True)
-except RuntimeError:
-    pass
+except (RuntimeError, ValueError):
+    pass  # fork unavailable (Windows) -> use the default start method
 
 from ultralytics import YOLO
 

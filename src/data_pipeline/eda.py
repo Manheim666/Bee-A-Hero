@@ -26,7 +26,10 @@ Image.MAX_IMAGE_PIXELS = None
 # Python 3.14 defaults to the "forkserver" start method, which re-imports the
 # entry module in each worker and breaks under stdin/notebook execution. "fork"
 # is safe here (workers only do PIL + numpy) and needs no re-import.
-_MP = multiprocessing.get_context("fork")
+try:
+    _MP = multiprocessing.get_context("fork")   # Linux/Mac: avoids py3.14 forkserver bug
+except ValueError:
+    _MP = multiprocessing.get_context()          # Windows: default (spawn)
 
 
 # --------------------------------------------------------------------------- #
