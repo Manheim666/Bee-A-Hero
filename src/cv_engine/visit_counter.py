@@ -135,8 +135,8 @@ class FlowerTracker:
 
 
 def count_visits(video, flower_weights, insect_weights, classifier_weights,
-                 out_dir: Path, conf=0.25, debounce=20, save_video=False,
-                 flower_interval=5) -> dict:
+                 out_dir: Path, conf=0.1, debounce=20, save_video=False,
+                 flower_interval=5, vid_stride=2) -> dict:
     from ultralytics import YOLO
     out_dir.mkdir(parents=True, exist_ok=True)
     flower_model, insect_model = YOLO(flower_weights), YOLO(insect_weights)
@@ -150,7 +150,7 @@ def count_visits(video, flower_weights, insect_weights, classifier_weights,
     writer = None
 
     stream = insect_model.track(source=video, stream=True, tracker="botsort.yaml",
-                                persist=True, conf=conf, verbose=False)
+                                persist=True, conf=conf, verbose=False, vid_stride=vid_stride)
     for fi, res in enumerate(stream):
         frame = res.orig_img
         # re-detect flowers every `flower_interval` frames (they move slowly);
@@ -219,16 +219,19 @@ def main() -> None:
     ap.add_argument("--insect-weights", required=True)
     ap.add_argument("--classifier-weights", default="")
     ap.add_argument("--out", default=str(C.INTERIM_DIR / "cv_runs" / "visits"))
-    ap.add_argument("--conf", type=float, default=0.25)
+    ap.add_argument("--conf", type=float, default=0.1)
     ap.add_argument("--debounce", type=int, default=20)
     ap.add_argument("--flower-interval", type=int, default=5,
                     help="re-detect flowers every N frames (dynamic video)")
+    ap.add_argument("--vid-stride", type=int, default=2,
+                    help="process every Nth frame (lower effective fps, stabler tracks)")
     ap.add_argument("--save-video", action="store_true")
     args = ap.parse_args()
     import json
     print(json.dumps(count_visits(args.video, args.flower_weights, args.insect_weights,
                                   args.classifier_weights, Path(args.out), args.conf,
-                                  args.debounce, args.save_video, args.flower_interval), indent=2))
+                                  args.debounce, args.save_video, args.flower_interval,
+                                  args.vid_stride), indent=2))
 
 
 if __name__ == "__main__":
