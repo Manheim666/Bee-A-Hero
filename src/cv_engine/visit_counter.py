@@ -134,6 +134,29 @@ class FlowerTracker:
         return [(fid, t["box"]) for fid, t in self.tracks.items() if t["missed"] == 0]
 
 
+def _load_types():
+    """Map species class_id (str) -> coarse insect type from the taxonomy manifest."""
+    import csv as _csv
+    from src import config as _C
+    bee = set(_C.BEE_FAMILIES)
+    out = {}
+    try:
+        for r in _csv.DictReader(open(_C.MANIFEST_DIR / "split_manifest.csv")):
+            o, f = r["order"], r["family"]
+            if f in bee: t = "bee"
+            elif o == "Lepidoptera": t = "butterfly"
+            elif f == "Formicidae": t = "ant"
+            elif o == "Coleoptera": t = "beetle"
+            elif o == "Diptera": t = "fly"
+            elif o == "Hymenoptera": t = "wasp"
+            elif o == "Hemiptera": t = "bug"
+            else: t = (o or "insect").lower()
+            out[r["class_id"]] = t
+    except FileNotFoundError:
+        pass
+    return out
+
+
 def count_visits(video, flower_weights, insect_weights, classifier_weights,
                  out_dir: Path, conf=0.1, debounce=20, save_video=False,
                  flower_interval=5, vid_stride=2) -> dict:
@@ -142,7 +165,8 @@ def count_visits(video, flower_weights, insect_weights, classifier_weights,
     flower_model, insect_model = YOLO(flower_weights), YOLO(insect_weights)
     classifier = Classifier(classifier_weights) if classifier_weights else None
 
-    visits = defaultdict(lambda: {"total": 0, "pollinator": 0, "non_pollinator": 0})
+    types = _load_types() if classifier is not None else {}
+    visits = defaultdict(Counter)
     track_votes: dict[int, Counter] = defaultdict(Counter)   # track_id -> class votes
     last_flower: dict[int, str | None] = {}
     last_visit_frame: dict[tuple[int, str], int] = {}
@@ -168,10 +192,11 @@ def count_visits(video, flower_weights, insect_weights, classifier_weights,
             for tid, b in zip(ids, xyxy):
                 if classifier is not None:                    # majority vote per track
                     x1, y1, x2, y2 = map(int, b)
-                    track_votes[tid][classifier.predict(frame[y1:y2, x1:x2])] += 1
+                    sp = classifier.predict(frame[y1:y2, x1:x2])
+                    track_votes[tid][types.get(sp, sp)] += 1   # species id -> type
                     cls = track_votes[tid].most_common(1)[0][0]
                 else:
-                    cls = "pollinator"
+                    cls = "insect"
                 labels[tid] = cls
                 cur = next((fid for fid, fb in flowers if _in(fb, _center(b))), None)
                 if cur is not None and last_flower.get(tid) != cur:
@@ -187,10 +212,12 @@ def count_visits(video, flower_weights, insect_weights, classifier_weights,
 
     for fid in ftracker.seen:                     # include flowers seen with 0 visits
         visits[fid]
-    rows = [{"flower_id": k, **v} for k, v in sorted(visits.items())]
+    ctypes = sorted({t for v in visits.values() for t in v if t != "total"})
+    rows = [{"flower_id": k, "total": v["total"], **{t: v.get(t, 0) for t in ctypes}}
+            for k, v in sorted(visits.items())]
     csv_path = out_dir / (Path(video).stem + "_visits.csv")
     with open(csv_path, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["flower_id", "total", "pollinator", "non_pollinator"])
+        w = csv.DictWriter(fh, fieldnames=["flower_id", "total"] + ctypes)
         w.writeheader(); w.writerows(rows)
     return {"video": Path(video).name, "flowers": len(flowers),
             "visits": {r["flower_id"]: r["total"] for r in rows}, "csv": str(csv_path)}
