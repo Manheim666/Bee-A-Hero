@@ -134,6 +134,9 @@ class FlowerTracker:
         return [(fid, t["box"]) for fid, t in self.tracks.items() if t["missed"] == 0]
 
 
+POLLINATOR_TYPES = {"bee", "butterfly", "wasp", "fly"}  # highlighted + rolled up in CSV
+
+
 def _load_types():
     """Map species class_id (str) -> coarse insect type from the taxonomy manifest."""
     import csv as _csv
@@ -213,11 +216,14 @@ def count_visits(video, flower_weights, insect_weights, classifier_weights,
     for fid in ftracker.seen:                     # include flowers seen with 0 visits
         visits[fid]
     ctypes = sorted({t for v in visits.values() for t in v if t != "total"})
-    rows = [{"flower_id": k, "total": v["total"], **{t: v.get(t, 0) for t in ctypes}}
+    rows = [{"flower_id": k, "total": v["total"],
+             "pollinator": sum(v.get(t, 0) for t in POLLINATOR_TYPES),
+             "non_pollinator": v["total"] - sum(v.get(t, 0) for t in POLLINATOR_TYPES),
+             **{t: v.get(t, 0) for t in ctypes}}
             for k, v in sorted(visits.items())]
     csv_path = out_dir / (Path(video).stem + "_visits.csv")
     with open(csv_path, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["flower_id", "total"] + ctypes)
+        w = csv.DictWriter(fh, fieldnames=["flower_id", "total", "pollinator", "non_pollinator"] + ctypes)
         w.writeheader(); w.writerows(rows)
     return {"video": Path(video).name, "flowers": len(flowers),
             "visits": {r["flower_id"]: r["total"] for r in rows}, "csv": str(csv_path)}
@@ -231,10 +237,12 @@ def _annotate(frame, flowers, res, labels, visits):
     if res.boxes is not None and res.boxes.id is not None:
         for tid, b in zip(res.boxes.id.int().cpu().tolist(), res.boxes.xyxy.cpu().numpy()):
             x1, y1, x2, y2 = map(int, b)
-            cls = labels.get(tid, "?")
-            col = (255, 120, 0) if cls == "pollinator" else (0, 0, 255)
+            cls = labels.get(tid, "insect")
+            poll = cls in POLLINATOR_TYPES
+            col = (0, 180, 255) if poll else (0, 0, 255)   # pollinator=orange, else red
             cv2.rectangle(frame, (x1, y1), (x2, y2), col, 2)
-            cv2.putText(frame, f"{cls}#{tid}", (x1, y1 - 6),
+            tag = f"{cls}{' (pollinator)' if poll else ''} #{tid}"
+            cv2.putText(frame, tag, (x1, y1 - 6),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, col, 1)
     return frame
 
