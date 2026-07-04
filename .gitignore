@@ -60,3 +60,7 @@ data/raw/BEE_coco/
 # graphify output/cache (do not track)
 graphify-out/
 **/graphify-out/
+
+# annotated result videos (large, not pushed)
+test_video_result/
+!test_video_result/.gitkeep
