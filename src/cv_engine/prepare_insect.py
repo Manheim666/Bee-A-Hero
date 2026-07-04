@@ -33,7 +33,10 @@ import cv2
 from src import config as C
 from src.data_pipeline.flower.make_detection_dataset import auto_bbox
 
-_MP = multiprocessing.get_context("fork")
+try:
+    _MP = multiprocessing.get_context("fork")   # Linux/Mac
+except ValueError:
+    _MP = multiprocessing.get_context()          # Windows: default (spawn)
 OUT = C.INTERIM_DIR / "insect_det"
 NAMES = ["pollinator", "non_pollinator"]
 

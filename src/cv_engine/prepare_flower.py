@@ -26,7 +26,10 @@ import cv2
 from src import config as C
 from src.data_pipeline.flower.make_detection_dataset import auto_bbox
 
-_MP = multiprocessing.get_context("fork")
+try:
+    _MP = multiprocessing.get_context("fork")   # Linux/Mac
+except ValueError:
+    _MP = multiprocessing.get_context()          # Windows: default (spawn)
 SPLIT_MAP = {"Training Data": "train", "Validation Data": "val", "Testing Data": "test"}
 IMG_EXTS = {".jpg", ".jpeg", ".png"}
 OUT = C.INTERIM_DIR / "flower_det"
