@@ -115,6 +115,33 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
             "visits": {r["flower_id"]: r["total"] for r in rows}, "csv": str(csv_path), "timeline": str(tl)}
 
 
+def aggregate_csvs(out_dir: Path) -> dict:
+    """Merge every per-video CSV into two team-friendly tables the ML/LLM team can fetch:
+
+      * ``ALL_visits.csv``   -> video, flower_id, total, pollinator, <types...>
+      * ``ALL_timeline.csv`` -> video, flower_id, track_id, type, t_enter_s
+    """
+    import glob
+    out_dir = Path(out_dir)
+    for kind, key in (("visits", "_visits.csv"), ("timeline", "_timeline.csv")):
+        rows, fields = [], []
+        for f in sorted(glob.glob(str(out_dir / f"*{key}"))):
+            if Path(f).name.startswith("ALL_"):
+                continue
+            video = Path(f).name[: -len(key)]
+            for r in csv.DictReader(open(f)):
+                for k in r:
+                    if k not in fields:
+                        fields.append(k)
+                rows.append({"video": video, **r})
+        dst = out_dir / f"ALL_{kind}.csv"
+        with open(dst, "w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=["video"] + fields, restval=0)
+            w.writeheader(); w.writerows(rows)
+    return {"all_visits": str(out_dir / "ALL_visits.csv"),
+            "all_timeline": str(out_dir / "ALL_timeline.csv")}
+
+
 def _annotate(frame, flowers, drawn, visits):
     for tid, box, typ in drawn:                                # per-insect box + id + type
         x1, y1, x2, y2 = map(int, box)
