@@ -62,7 +62,7 @@ def _box_overlap_frac(mask: np.ndarray, box) -> float:
 
 
 def count_visits_seg(video, flower_weights, insect_weights, classifier_weights,
-                     out_dir: Path, conf=0.30, save_video=False,
+                     out_dir: Path, conf=0.15, save_video=False,
                      flower_interval=5, target_fps=TARGET_FPS, flower_conf=0.15) -> dict:
     import supervision as sv
     from ultralytics import YOLO
