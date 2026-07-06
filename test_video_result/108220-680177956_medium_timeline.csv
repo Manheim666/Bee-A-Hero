@@ -1,0 +1,12 @@
+flower_id,track_id,type,t_enter_s
+flower_2,1,bee,0.0
+flower_2,2,bee,0.0
+flower_1,2,bee,0.21
+flower_1,1,bee,0.33
+flower_6,2,bee,6.26
+flower_3,2,bee,6.46
+flower_6,1,bee,7.72
+flower_3,1,bee,16.18
+flower_1,4,bee,16.22
+flower_3,6,bee,17.06
+flower_3,4,bee,17.39

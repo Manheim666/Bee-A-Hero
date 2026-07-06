@@ -61,9 +61,10 @@ data/raw/BEE_coco/
 graphify-out/
 **/graphify-out/
 
-# annotated result videos (large, not pushed)
-test_video_result/
+# annotated result videos (large, not pushed) — but keep the CSVs for the ML/LLM team
+test_video_result/*
 !test_video_result/.gitkeep
+!test_video_result/*.csv
 
 # --- Downloaded training datasets (large, never pushed) ---
 data/raw/*.coco/
