@@ -1,0 +1,11 @@
+flower_id,track_id,type,t_enter_s
+flower_1,1,beetle,0.0
+flower_1,4,bee,1.37
+flower_1,5,bee,1.94
+flower_2,7,bee,2.27
+flower_1,9,butterfly,5.71
+flower_1,11,bee,6.31
+flower_2,21,beetle,7.41
+flower_2,22,bee,7.47
+flower_2,32,bee,11.75
+flower_2,38,bee,14.98
