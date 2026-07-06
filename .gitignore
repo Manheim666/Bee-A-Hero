@@ -64,3 +64,11 @@ graphify-out/
 # annotated result videos (large, not pushed)
 test_video_result/
 !test_video_result/.gitkeep
+
+# --- Downloaded training datasets (large, never pushed) ---
+data/raw/*.coco/
+data/raw/Bee Detection in the Wild/
+data/raw/flower visits/
+data/raw/flowerDetecter-v2.v1i.coco/
+data/raw/*.v1i.coco/
+data/raw/DATASETS_TO_DOWNLOAD.md
