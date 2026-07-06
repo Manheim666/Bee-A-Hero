@@ -32,7 +32,8 @@ WEIGHTS_DIR = C.INTERIM_DIR / "weights"
 
 def train(data: str, name: str, model: str = "yolo26n.pt", epochs: int = 60,
           imgsz: int = 640, batch: int = 16, device: int | str = 0,
-          patience: int = 15, resume: bool = False, scale: float = 0.5) -> dict:
+          patience: int = 15, resume: bool = False, scale: float = 0.5,
+          mixup: float = 0.0, copy_paste: float = 0.0) -> dict:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     # prefer a local pretrained copy if present (avoids re-download to cwd)
     local = WEIGHTS_DIR / model
@@ -44,6 +45,9 @@ def train(data: str, name: str, model: str = "yolo26n.pt", epochs: int = 60,
         # scale jitter: larger range makes the detector see objects at more
         # scales (incl. small) -> tighter boxes on small/video insects.
         scale=scale,
+        # mixup + copy-paste augmentation help under-represented / small classes
+        # (blends images and pastes objects onto new backgrounds).
+        mixup=mixup, copy_paste=copy_paste,
     )
     best = RUNS_DIR / name / "weights" / "best.pt"
     # report validation mAP
@@ -67,11 +71,14 @@ def main() -> None:
     ap.add_argument("--patience", type=int, default=15)
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--scale", type=float, default=0.5, help="scale-jitter gain (aug)")
+    ap.add_argument("--mixup", type=float, default=0.0, help="mixup aug prob")
+    ap.add_argument("--copy-paste", type=float, default=0.0, help="copy-paste aug prob")
     args = ap.parse_args()
     import json
     print(json.dumps(train(args.data, args.name, args.model, args.epochs,
                            args.imgsz, args.batch, patience=args.patience,
-                           resume=args.resume, scale=args.scale), indent=2))
+                           resume=args.resume, scale=args.scale,
+                           mixup=args.mixup, copy_paste=args.copy_paste), indent=2))
 
 
 if __name__ == "__main__":
