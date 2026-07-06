@@ -48,9 +48,9 @@ ORDER2CLS = {"hymenoptera": "bee", "diptera": "fly", "coleoptera": "beetle",
              "hemiptera": "bug", "lepidoptera": "butterfly"}
 INSECT_NAMES = ["bee", "fly", "beetle", "bug", "butterfly"]
 # per-class cap on flower-visits frames (balance; bee is hugely over-represented)
-FV_INSECT_CAP = {"bee": 3000, "fly": 6000, "beetle": 3300, "bug": 900, "butterfly": 200}
+FV_INSECT_CAP = {"bee": 2000, "fly": 6000, "beetle": 3300, "bug": 900, "butterfly": 200}
 FV_FLOWER_CAP = 2500
-BEE_COCO_CAP = 3500
+BEE_COCO_CAP = 1200          # cut bee dominance (bee AP already strong) -> rebalance
 
 
 # --------------------------------------------------------------------------- #
@@ -85,9 +85,16 @@ def _write(out: Path, split: str, img: Path, W, H, lines: list[str]):
     (out / "labels" / split / f"{img.stem}.txt").write_text("\n".join(lines) + ("\n" if lines else ""))
 
 
+def _clamp01(v):
+    return min(1.0, max(0.0, v))
+
+
 def _yolo_line(cls: int, x, y, w, h, W, H):
-    cx, cy = (x + w / 2) / W, (y + h / 2) / H
-    return f"{cls} {cx:.6f} {cy:.6f} {w / W:.6f} {h / H:.6f}"
+    # clamp the box to the image so no out-of-bounds coords (Ultralytics drops those)
+    x1, y1 = _clamp01(x / W), _clamp01(y / H)
+    x2, y2 = _clamp01((x + w) / W), _clamp01((y + h) / H)
+    cx, cy, bw, bh = (x1 + x2) / 2, (y1 + y2) / 2, x2 - x1, y2 - y1
+    return f"{cls} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}"
 
 
 # --------------------------------------------------------------------------- #
@@ -231,19 +238,24 @@ def build_insect() -> dict:
     return {"out": str(out), "counts": dict(stats)}
 
 
-def aug_insect_from_inat(cap_per_class: int = 1500) -> dict:
-    """Boost the rare insect classes with iNaturalist crops (GrabCut boxes).
+def aug_insect_from_inat(cap_per_class: int = 2500) -> dict:
+    """Boost the weak insect classes with iNaturalist crops (GrabCut boxes).
 
-    ``flower visits`` has very few butterflies/bugs/beetles, so top them up from
-    iNat: for each taxonomic order we care about, take up to ``cap_per_class``
-    images, box the centred organism with GrabCut and add it to ``insect_multidet``.
+    Per-class AP showed fly/beetle/bug lagging (few, small, camouflaged on flowers),
+    while bee/butterfly are strong. So top up the weak classes from iNat: for each
+    taxonomic order, take up to ``cap_per_class`` images, box the centred organism
+    with GrabCut and add it to ``insect_multidet``. Butterfly is already strong so it
+    gets a smaller top-up.
     """
     import csv as _csv
     import cv2
     from src.data_pipeline.flower.make_detection_dataset import auto_bbox
     out = C.INTERIM_DIR / "insect_multidet"
     cid = {n: i for i, n in enumerate(INSECT_NAMES)}
-    order_cls = {"Lepidoptera": "butterfly", "Coleoptera": "beetle", "Hemiptera": "bug"}
+    order_cls = {"Diptera": "fly", "Coleoptera": "beetle", "Hemiptera": "bug",
+                 "Lepidoptera": "butterfly"}
+    per_cls_cap = {"fly": cap_per_class, "beetle": cap_per_class,
+                   "bug": cap_per_class, "butterfly": 1200}
     by_cls = defaultdict(list)
     for r in _csv.DictReader(open(C.MANIFEST_DIR / "split_manifest.csv")):
         cl = order_cls.get(r["order"])
@@ -252,7 +264,7 @@ def aug_insect_from_inat(cap_per_class: int = 1500) -> dict:
     rng = random.Random(C.SEED)
     stats: Counter = Counter()
     for cl, recs in by_cls.items():
-        rng.shuffle(recs); recs = recs[:cap_per_class]
+        rng.shuffle(recs); recs = recs[:per_cls_cap.get(cl, cap_per_class)]
         for r in recs:
             split = {"train": "train", "val": "val", "test": "test"}.get(r["split"], "train")
             img = C.REPO_ROOT / r["path"]
