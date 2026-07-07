@@ -1,7 +1,0 @@
-# BEE_HERo - Option-3 re-split (pooled+dedup+stratified, group-safe)
-path: data/raw/iNaturist   # repo-relative; split-list entries are relative to this
-train: _pipeline/splits/train.txt
-val: _pipeline/splits/val.txt
-test: _pipeline/splits/test.txt
-nc: 2526
-# class names listed in dataset_config.json / split_assignments.csv
