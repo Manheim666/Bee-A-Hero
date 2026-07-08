@@ -60,22 +60,44 @@ instance-**segmentation** approach (SAM-bootstrapped masks) was tried and droppe
 on hard scenes it masked the flower instead of the insect; clean bounding boxes are
 more robust for the counting task.
 
-## Results (Act 1 — trained on this machine, RTX 3050 6 GB)
+## Results (trained on this machine, RTX 3050 6 GB)
 
-| Model | Task | mAP@0.5 | mAP@0.5:0.95 |
-|-------|------|---------|--------------|
-| **Flower detector** (YOLO26m, 1 class) | flower detection | **0.776** | 0.506 |
-| **Insect detector** (YOLO26m, 5 classes) | insect detection + type | **0.618** | 0.403 |
+The detectors were retrained (**v2 / Act-2**) and now beat the **v1 / Act-1** baselines on
+every metric. The detection + tracking + **landing** pipeline (**v3 / Act-3**) regenerates the
+test-video CSVs and annotated videos from the best weights — **v3 is not a new model, it is the
+results produced by the best detectors + the honeybee subclassifier.** Only the best weights per
+detector ship in the repo (v2); v1 is kept locally for reference.
 
-Per-class insect AP@0.5: **bee 0.88 · butterfly 0.81 · bug 0.53 · beetle 0.45 · fly 0.42**.
-Bee and butterfly are strong; fly/beetle/bug are the current weak point (small,
-camouflaged insects on flowers) — the Act-2 improvement round targets them
-(iNaturalist augmentation of the weak classes, class rebalancing, `imgsz` 800,
-mixup + copy-paste; all wired into `prepare_detect.py` / `train.py`).
+### Detectors — v1 vs v2 (v2 shipped)
 
-Detection over the test videos produced **55 flower rows / 186 counted visits**
-across 5 insect types. Per-video and combined CSVs are in `test_video_result/`
-(`ALL_visits.csv`, `ALL_timeline.csv`).
+| Detector | Ver | mAP@0.5 | mAP@0.5:0.95 | recall | key change |
+|---|---|---|---|---|---|
+| Flower (YOLO26m, 1 cls) | v1 | 0.776 | 0.506 | — | imgsz 640 |
+| **Flower** | **v2** ✅ | **0.815** | **0.537** | — | imgsz 768, longer schedule |
+| Insect (YOLO26m, 5 cls) | v1 | 0.618 | 0.403 | 0.565 | imgsz 640 |
+| **Insect** | **v2** ✅ | **0.683** | **0.476** | **0.623** | imgsz 768 + mixup/copy-paste |
+
+**What changed v1 → v2:** `imgsz` 640 → 768, **mixup + copy-paste** augmentation, longer training.
+The Act-1 weak point — small, camouflaged fly/beetle/bug and low insect recall — improved:
+insect **recall 0.565 → 0.623** and **localization (mAP@0.5:0.95) +0.07** on both detectors, so the
+boxes in the annotated videos are noticeably tighter. (v1 per-class AP@0.5 for reference:
+bee 0.88 · butterfly 0.81 · bug 0.53 · beetle 0.45 · fly 0.42.)
+
+### Honeybee subclassifier (v2-era)
+
+Binary honeybee (*Apis*) vs other-bee, run on `bee` crops inside `video_detect`. Honeybees are
+weighted **10×** in `pollination_score` (they pollinate far more than other bees). iNaturalist
+data is thin (168 *Apis* training images), so this is **provisional: F1 0.523** (recall ~0.75,
+precision ~0.38 → it over-calls honeybee). Treat `is_honeybee` and the honeybee share of
+`pollination_score` as approximate until more *Apis* data is added.
+
+### v3 — landing results over the 20 test videos
+
+233 landing episodes → **52 real landings** (dwell ≥ 2 s). By insect type: **honeybee 20 · fly 14 ·
+beetle 10 · butterfly 4 · bee 3 · bug 1**. **69 flowers** tracked, total **pollination_score 1838**.
+Zero *inferred* (undetected-flower) landings — flower v2 recall caught every flower that saw a real
+landing. Per-video + combined tables in `test_video_result/` (`ALL_landings.csv`,
+`ALL_flower_summary.csv`) feed the ML + LLM phases.
 
 Data stage: **2,526** Insecta classes, **151,545** labelled images, a clean
 **70 / 15 / 15** split, zero corrupt images, zero cross-split leakage.
@@ -90,26 +112,41 @@ self-contained (no `import src`) version for a clean machine.
 
 CLI equivalent:
 
+**One command runs the whole `data/raw/Test_Video/` folder** through the best
+weights and writes everything to `test_video_result/` — no notebook, no training,
+no dataset download. Point `--video` at the folder (or a single clip):
+
 ```bash
 python -m src.cv_engine.video_detect \
-    --video data/raw/Test_Video/clip.mp4 \
-    --flower-weights data/interim/cv_runs/flower_det2_yolo26m/weights/best.pt \
-    --insect-weights data/interim/cv_runs/insect_multidet_yolo26m/weights/best.pt \
+    --video data/raw/Test_Video \
+    --flower-weights data/interim/cv_runs/flower_det2_v2_yolo26m/weights/best.pt \
+    --insect-weights data/interim/cv_runs/insect_multidet_v2_yolo26m/weights/best.pt \
+    --honeybee-weights data/interim/cv_runs/honeybee_clf/best.pt \
     --save-video
 ```
+
+For each video it writes, to `test_video_result/`:
+- `<video>_landings.csv` — one row per landing episode (enter/exit/dwell, type,
+  `is_honeybee`, `is_real_landing`≥2s, `flower_detected` detected|inferred, `pollination_weight`)
+- `<video>_flower_summary.csv` — per-flower counts, dwell, `pollination_score`
+- `<video>_annotated.mp4` — bbox video (flower + per-insect boxes/IDs/type + live counts)
+
+and aggregates all videos into `ALL_landings.csv` + `ALL_flower_summary.csv` for the ML/LLM phase.
 
 ## Repository structure
 
 ```
 src/cv_engine/
 ├── prepare_detect.py    # build YOLO detection sets from data/raw (flower + 5-class insect)
-├── video_detect.py      # flower box+ID + insect box+ID+type (BoT-SORT) + per-flower counts + CSVs
+├── video_detect.py      # flower+insect boxes/IDs/type (BoT-SORT) + landing episodes + CSVs
 ├── train.py             # YOLO26 fine-tuning (imgsz, mixup/copy-paste, auto-resume friendly)
+├── honeybee_clf.py      # honeybee-vs-other-bee subclassifier (run on bee crops in video_detect)
 └── visit_counter.py     # FlowerTracker + shared helpers
 notebooks/04_detection_pipeline.ipynb        # import-src; §5 = one-shot test
 full_notebooks/04_detection_pipeline_full.ipynb  # self-contained (no import src)
-data/interim/cv_runs/{flower_det2,insect_multidet}_yolo26m/weights/best.pt   # committed
-test_video_result/ALL_visits.csv, ALL_timeline.csv                          # committed team CSVs
+data/interim/cv_runs/{flower_det2,insect_multidet}_v2_yolo26m/weights/best.pt   # committed
+data/interim/cv_runs/honeybee_clf/best.pt                                    # committed
+test_video_result/ALL_landings.csv, ALL_flower_summary.csv                   # committed team CSVs
 ```
 
 ## Training datasets (Act-2, to retrain on the server)
