@@ -19,6 +19,14 @@ BACKUP_DIR: Path = DATA_DIR / "_backup"
 
 INAT_DIR: Path = RAW_DIR / "iNaturist"
 FLOWER_DIR: Path = RAW_DIR / "Flower"
+# Roboflow bee-detection COCO export (BEE.v8i). Place it here on any machine
+# (git-ignored); overridable via the BEE_COCO_DIR env var for other layouts.
+BEE_COCO_DIR: Path = Path(__import__("os").environ.get("BEE_COCO_DIR", RAW_DIR / "BEE_coco"))
+# Videos to run the visit-counter on.
+TEST_VIDEO_DIR: Path = RAW_DIR / "Test_Video"
+
+# Published trained-weights repo on the Hugging Face Hub (for teammates to pull).
+HF_WEIGHTS_REPO: str = "Manheim/bee-a-hero-cv"
 
 # iNaturalist splits present on disk. ``public_test`` is unlabeled
 # (annotations: 0) and is inference-only — it is NOT part of the labeled split.
