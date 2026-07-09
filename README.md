@@ -105,9 +105,9 @@ Data stage: **2,526** Insecta classes, **151,545** labelled images, a clean
 ## Run it in one snippet (weights ship in the repo)
 
 The trained weights are committed, so a teammate/server can run **without training
-or downloading datasets**. Open **`notebooks/04_detection_pipeline.ipynb`** and run
+or downloading datasets**. Open **`notebooks/02_cv_tests.ipynb`** and run
 **only the last cell (§5 ⚡ ONE-SHOT TEST)** — it loads the weights, prints both
-detectors' mAP, runs a test video, and writes the CSVs. `full_notebooks/04_…` is a
+detectors' mAP, runs a test video, and writes the CSVs. `full_notebooks/02_cv_tests_full.ipynb` is a
 self-contained (no `import src`) version for a clean machine.
 
 CLI equivalent:
@@ -142,8 +142,13 @@ src/cv_engine/
 ├── train.py             # YOLO26 fine-tuning (imgsz, mixup/copy-paste, auto-resume friendly)
 ├── honeybee_clf.py      # honeybee-vs-other-bee subclassifier (run on bee crops in video_detect)
 └── visit_counter.py     # FlowerTracker + shared helpers
-notebooks/04_detection_pipeline.ipynb        # import-src; §5 = one-shot test
-full_notebooks/04_detection_pipeline_full.ipynb  # self-contained (no import src)
+notebooks/                          # shared slot scheme (matches main; teams fill their own)
+├── 00_data_ready.ipynb             # data prep
+├── 01_eda.ipynb                    # exploratory analysis
+├── 02_cv_tests.ipynb               # CV — detection + tracking (this branch); §5 = one-shot test
+├── 03_ml_prototypes.ipynb          # ML slot
+└── 04_llm_prompts.ipynb            # LLM slot
+full_notebooks/02_cv_tests_full.ipynb   # self-contained CV notebook (no import src)
 data/interim/cv_runs/{flower_det2,insect_multidet}_v2_yolo26m/weights/best.pt   # committed
 data/interim/cv_runs/honeybee_clf/best.pt                                    # committed
 test_video_result/ALL_landings.csv, ALL_flower_summary.csv                   # committed team CSVs
