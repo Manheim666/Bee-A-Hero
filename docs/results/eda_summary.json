@@ -1,0 +1,61 @@
+{
+  "overview": {
+    "images_total": 151545,
+    "num_classes": 2526,
+    "num_orders": 17,
+    "num_families": 190,
+    "bee_images": 3720,
+    "split_counts": {
+      "train": 106077,
+      "test": 22734,
+      "val": 22734
+    },
+    "split_fractions": {
+      "train": 0.7,
+      "test": 0.15,
+      "val": 0.15
+    },
+    "disk_size_gb": 11.64,
+    "mean_image_kb": 76.8
+  },
+  "imbalance": {
+    "num_classes": 2526,
+    "min": 59.0,
+    "max": 60.0,
+    "mean": 59.99406175771971,
+    "imbalance_ratio": 1.0169491525423728,
+    "gini": 0.0001
+  },
+  "fig_class_order": "/home/manheim666/Desktop/Bee-A-Hero/data/interim/eda/class_and_order_distribution.png",
+  "fig_split": "/home/manheim666/Desktop/Bee-A-Hero/data/interim/eda/split_bee_order_heatmap.png",
+  "every_class_all_splits": true,
+  "image_stats_sampled": {
+    "width_min_med_max": [
+      161,
+      500,
+      500
+    ],
+    "height_min_med_max": [
+      165,
+      379,
+      500
+    ],
+    "aspect_med": 1.305,
+    "brightness_med": 124.9,
+    "modes": {
+      "RGB": 12000
+    }
+  },
+  "fig_imgstats": "/home/manheim666/Desktop/Bee-A-Hero/data/interim/eda/image_statistics.png",
+  "quality": {
+    "grayscale_images_sampled": 25,
+    "blank_images_sampled": 0,
+    "blurry_flag_sampled(<=p5)": 600,
+    "very_dark_sampled(bright<30)": 46,
+    "very_bright_sampled(bright>225)": 29,
+    "sample_size": 12000,
+    "near_duplicate_groups_sampled": 0
+  },
+  "fig_quality": "/home/manheim666/Desktop/Bee-A-Hero/data/interim/eda/quality_mode_contrast.png",
+  "fig_samples": "/home/manheim666/Desktop/Bee-A-Hero/data/interim/eda/sample_grid.png"
+}
