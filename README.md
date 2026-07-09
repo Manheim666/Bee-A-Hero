@@ -1,74 +1,84 @@
 # Bee-A-Hero
 
-A computer-vision system that watches flowers, **detects and tracks** the insects
-that visit them, identifies the insect type, and turns those visits into a
-quantitative pollination signal — a per-flower, per-insect-type visit count with
-timestamps.
+**A pollination-monitoring system that turns orchard video into a quantitative pollination
+signal.** Cameras watch flowers; the pipeline detects and tracks the insects that visit them,
+measures how long each insect lands, and converts those landings — stage by stage — into a
+per-flower, per-species visit record, a fruit-set estimate, and a yield estimate, finally
+narrated as a plain-language report.
 
-The project runs in two stages:
+```
+Camera video
+   │
+   ▼
+[ DATA ]  clean, balanced, labelled training sets            notebooks/00_data_ready · 01_eda
+   │                                                          src/data_pipeline/
+   ▼
+[ CV ]    flower + insect detection · BoT-SORT tracking       notebooks/02_cv
+          landing episodes → per-flower / per-species CSVs     src/cv_engine/         ✅ shipped
+   │
+   ▼
+[ ML ]    visits → effective dose → fruit-set dose–response    notebooks/03_ml
+          → yield, with uncertainty                            src/ml_models/         🟡 scaffolding
+   │
+   ▼
+[ LLM ]   grounded, farmer-friendly pollination report         notebooks/04_llm
+                                                                src/llm_reporting/     🟡 scaffolding
+```
 
-1. **Data stage** — turn the raw iNaturalist archive into a clean, balanced,
-   fully-labelled dataset.
-2. **CV stage** — train a **flower detector** and a **multi-class insect
-   detector**, track insects through video with BoT-SORT, and count how many
-   distinct insects of each type visit each flower.
+The project is organised as a **four-stage pipeline on four branches** that merge into `main`:
+
+| Stage | Branch | Notebook slot | Source package | Status |
+|---|---|---|---|---|
+| **Data** | `data` | `00_data_ready`, `01_eda` | `src/data_pipeline/` | ✅ built |
+| **CV** | `cv` | `02_cv` | `src/cv_engine/` | ✅ trained + shipped weights |
+| **ML** | `ml` | `03_ml` | `src/ml_models/` | 🟡 designed, scaffolding |
+| **LLM** | `llm` | `04_llm` | `src/llm_reporting/` | 🟡 designed, scaffolding |
+
+`main` is the integration branch and holds the canonical structure; each team fills its own
+notebook slot and source package, then merges. The slots not owned by a stage are kept as empty
+placeholders so every branch shares one layout and merges without conflict.
 
 ---
 
-## What it does
+## 1. Data stage — from raw archive to a clean dataset
 
-Given a video of flowers, the pipeline answers three questions:
+Turns the raw iNaturalist archive (plus targeted bee/flower detection sets) into a
+fully-labelled, balanced, leak-free training corpus.
 
-- **Where are the flowers?** — a single-class YOLO26 detector marks each flower
-  and gives it a stable ID (`flower_1`, `flower_2`, …) — a separate box per flower.
-- **What is visiting them?** — insects are detected as one of five types
-  (`bee, fly, beetle, bug, butterfly`) and tracked frame-to-frame with **BoT-SORT**,
-  so each insect gets its own ID and colour (bee #1 ≠ bee #2). The type is a
-  detection class, majority-voted over the track for stability.
-- **How much?** — a visit is counted when a tracked insect's box enters a flower's
-  box, and each `(insect, flower)` pair is counted **once ever** (a fly-off + return
-  is not a new visit), stamped with a timestamp:
+- **Result:** 2,526 Insecta classes, **151,545** labelled images, a clean **70 / 15 / 15**
+  split, zero corrupt images, zero cross-split leakage.
+- **Where:** `src/data_pipeline/` (`inaturalist_prep.py`, `eda.py`, `label_tools.py`,
+  `flower/`), notebooks `00_data_ready` + `01_eda`, and `full_notebooks/00…`, `01…`
+  (self-contained variants).
+- **Retraining datasets:** see `data/raw/DATASETS_TO_DOWNLOAD.md` and §6 below.
 
-  ```
-  video,flower_id,total,pollinator,bee,fly,beetle,bug,butterfly
-  345137_medium,flower_1,4,4,3,1,0,0,0
-  ```
+## 2. CV stage — detection, tracking, landing counting ✅
 
-## Architecture
+Given a video, the CV stage answers three questions:
 
-```
-                ┌──────────────────────┐
- video frame ──▶│ Flower detector       │─▶ per-flower box + stable ID
-                │ YOLO26 (1 class)      │
-                └──────────────────────┘
-                ┌──────────────────────┐
- video frame ──▶│ Insect detector       │─ BoT-SORT ─▶ box + ID + type
-                │ YOLO26 (5 classes)    │              (bee/fly/beetle/bug/butterfly)
-                └──────────────────────┘                     │
-                            └──────────── visit logic ───────┘
-                              (insect box enters flower box = 1 visit,
-                               counted once per (insect, flower))
-                                            │
-                                            ▼
-              per-flower / per-type CSV + timeline (timestamps) + annotated video
-```
+- **Where are the flowers?** A single-class YOLO26 detector marks each flower and gives it a
+  stable ID (`flower_1`, `flower_2`, …).
+- **What is visiting them?** A five-class YOLO26 insect detector (`bee, fly, beetle, bug,
+  butterfly`) plus **BoT-SORT** tracking gives each insect its own ID and type (majority-voted
+  over the track). A **honeybee subclassifier** further splits `bee` into honeybee (*Apis*) vs.
+  other bee, because honeybees pollinate far more.
+- **How much?** A **landing episode** is a contiguous span of an insect on a flower. Episodes
+  with dwell **≥ 2 s** count as *real landings* (a fly-through is not a feeding visit). Each
+  landing carries enter/exit time, dwell length, type, `is_honeybee`, and a per-species
+  `pollination_weight`.
 
-The insect **type is a detection class** (not a separate classifier), so
-localization and typing are decided together on the full-resolution box — this
-removed the bee/fly confusion of an earlier crop-classifier design. An earlier
-instance-**segmentation** approach (SAM-bootstrapped masks) was tried and dropped:
-on hard scenes it masked the flower instead of the insect; clean bounding boxes are
-more robust for the counting task.
+The insect **type is a detection class** (not a separate crop classifier), so localization and
+typing are decided together on the full-resolution box — this removed the bee/fly confusion of
+an earlier design. An earlier instance-**segmentation** approach (SAM-bootstrapped masks) was
+tried and dropped: on hard scenes it masked the flower instead of the insect; clean bounding
+boxes are more robust for counting.
 
-## Results (trained on this machine, RTX 3050 6 GB)
+### 2.1 Results (trained on this machine, RTX 3050 6 GB)
 
-The detectors were retrained (**v2 / Act-2**) and now beat the **v1 / Act-1** baselines on
-every metric. The detection + tracking + **landing** pipeline (**v3 / Act-3**) regenerates the
-test-video CSVs and annotated videos from the best weights — **v3 is not a new model, it is the
-results produced by the best detectors + the honeybee subclassifier.** Only the best weights per
-detector ship in the repo (v2); v1 is kept locally for reference.
-
-### Detectors — v1 vs v2 (v2 shipped)
+Detectors were retrained (**v2 / Act-2**) and beat the **v1 / Act-1** baselines on every metric.
+The landing pipeline (**v3 / Act-3**) regenerates the test-video CSVs and annotated videos from
+the best weights — **v3 is not a new model, it is the results produced by the best detectors +
+the honeybee subclassifier.** Only the best weights per detector ship (v2); v1 is kept locally.
 
 | Detector | Ver | mAP@0.5 | mAP@0.5:0.95 | recall | key change |
 |---|---|---|---|---|---|
@@ -77,87 +87,119 @@ detector ship in the repo (v2); v1 is kept locally for reference.
 | Insect (YOLO26m, 5 cls) | v1 | 0.618 | 0.403 | 0.565 | imgsz 640 |
 | **Insect** | **v2** ✅ | **0.683** | **0.476** | **0.623** | imgsz 768 + mixup/copy-paste |
 
-**What changed v1 → v2:** `imgsz` 640 → 768, **mixup + copy-paste** augmentation, longer training.
-The Act-1 weak point — small, camouflaged fly/beetle/bug and low insect recall — improved:
-insect **recall 0.565 → 0.623** and **localization (mAP@0.5:0.95) +0.07** on both detectors, so the
-boxes in the annotated videos are noticeably tighter. (v1 per-class AP@0.5 for reference:
-bee 0.88 · butterfly 0.81 · bug 0.53 · beetle 0.45 · fly 0.42.)
+**v1 → v2:** `imgsz` 640 → 768, **mixup + copy-paste** augmentation, longer training. Small,
+camouflaged fly/beetle/bug and low insect recall were the Act-1 weak point; insect **recall
+0.565 → 0.623** and **localization (mAP@0.5:0.95) +0.07** on both detectors, so boxes in the
+annotated videos are noticeably tighter.
 
-### Honeybee subclassifier (v2-era)
+**Honeybee subclassifier (v2-era).** Binary honeybee (*Apis*) vs. other-bee on `bee` crops.
+iNaturalist *Apis* data is thin (168 training images), so this is **provisional: F1 0.523**
+(recall ~0.75, precision ~0.38 → it over-calls honeybee). Treat `is_honeybee` and the honeybee
+share of `pollination_score` as approximate until more *Apis* data is added.
 
-Binary honeybee (*Apis*) vs other-bee, run on `bee` crops inside `video_detect`. Honeybees are
-weighted **10×** in `pollination_score` (they pollinate far more than other bees). iNaturalist
-data is thin (168 *Apis* training images), so this is **provisional: F1 0.523** (recall ~0.75,
-precision ~0.38 → it over-calls honeybee). Treat `is_honeybee` and the honeybee share of
-`pollination_score` as approximate until more *Apis* data is added.
+**v3 landing results over the 20 test videos.** 233 landing episodes → **52 real landings**
+(dwell ≥ 2 s). By type: **honeybee 20 · fly 14 · beetle 10 · butterfly 4 · bee 3 · bug 1**.
+**69 flowers** tracked, total **pollination_score 1838**. Zero *inferred* (undetected-flower)
+landings — flower v2 recall caught every flower that saw a real landing. Combined tables in
+`test_video_result/` (`ALL_landings.csv`, `ALL_flower_summary.csv`) feed the ML + LLM stages.
 
-### v3 — landing results over the 20 test videos
+### 2.2 Run it in one snippet (weights ship in the repo — best model only)
 
-233 landing episodes → **52 real landings** (dwell ≥ 2 s). By insect type: **honeybee 20 · fly 14 ·
-beetle 10 · butterfly 4 · bee 3 · bug 1**. **69 flowers** tracked, total **pollination_score 1838**.
-Zero *inferred* (undetected-flower) landings — flower v2 recall caught every flower that saw a real
-landing. Per-video + combined tables in `test_video_result/` (`ALL_landings.csv`,
-`ALL_flower_summary.csv`) feed the ML + LLM phases.
-
-Data stage: **2,526** Insecta classes, **151,545** labelled images, a clean
-**70 / 15 / 15** split, zero corrupt images, zero cross-split leakage.
-
-## Run it in one snippet (weights ship in the repo)
-
-The trained weights are committed, so a teammate/server can run **without training
-or downloading datasets**. Open **`notebooks/02_cv_tests.ipynb`** and run
-**only the last cell (§5 ⚡ ONE-SHOT TEST)** — it loads the weights, prints both
-detectors' mAP, runs a test video, and writes the CSVs. `full_notebooks/02_cv_tests_full.ipynb` is a
-self-contained (no `import src`) version for a clean machine.
-
-CLI equivalent:
-
-**One command runs the whole `data/raw/Test_Video/` folder** through the best
-weights and writes everything to `test_video_result/` — no notebook, no training,
-no dataset download. Point `--video` at the folder (or a single clip):
+The best weights are committed, so a teammate/server runs **without training or downloading
+datasets**. Point `--video` at a folder (batch) or a single clip:
 
 ```bash
 python -m src.cv_engine.video_detect \
     --video data/raw/Test_Video \
-    --flower-weights data/interim/cv_runs/flower_det2_v2_yolo26m/weights/best.pt \
-    --insect-weights data/interim/cv_runs/insect_multidet_v2_yolo26m/weights/best.pt \
+    --flower-weights   data/interim/cv_runs/flower_det2_v2_yolo26m/weights/best.pt \
+    --insect-weights   data/interim/cv_runs/insect_multidet_v2_yolo26m/weights/best.pt \
     --honeybee-weights data/interim/cv_runs/honeybee_clf/best.pt \
     --save-video
 ```
 
+Notebook equivalent: open **`notebooks/02_cv.ipynb`** and run **only the last cell (§5 ⚡
+ONE-SHOT TEST)** — it loads the best weights, prints both detectors' mAP, runs a test video, and
+writes the CSVs. `full_notebooks/02_cv_full.ipynb` is a self-contained (no `import src`) version
+for a clean machine. Both use the **best model only**.
+
 For each video it writes, to `test_video_result/`:
-- `<video>_landings.csv` — one row per landing episode (enter/exit/dwell, type,
-  `is_honeybee`, `is_real_landing`≥2s, `flower_detected` detected|inferred, `pollination_weight`)
+- `<video>_landings.csv` — one row per landing episode (enter/exit/dwell, type, `is_honeybee`,
+  `is_real_landing` ≥ 2 s, `flower_detected` detected|inferred, `pollination_weight`)
 - `<video>_flower_summary.csv` — per-flower counts, dwell, `pollination_score`
 - `<video>_annotated.mp4` — bbox video (flower + per-insect boxes/IDs/type + live counts)
 
-and aggregates all videos into `ALL_landings.csv` + `ALL_flower_summary.csv` for the ML/LLM phase.
+and aggregates all videos into `ALL_landings.csv` + `ALL_flower_summary.csv` for the ML/LLM
+stages. Useful knobs: `--conf 0.2` (insect sensitivity), `--flower-conf 0.15`, `--target-fps 24`.
 
-## Repository structure
+## 3. ML stage — visits → fruit set → yield 🟡
+
+The CV CSVs are the **input**; fruit set and yield are the **output**. The modeling approach
+(designed, scaffolding in `src/ml_models/`):
+
+- **Effective dose, not a flat count.** Raw counts are an imperfect proxy — species, dwell time,
+  tracking reliability and weather all matter. Each flower's dose is a weighted sum
+  `D = Σ w_species · φ(dwell) · reliability · weather_gate`, correcting the **attenuation bias**
+  that imperfect tracking introduces (it systematically *understates* pollinator value).
+- **Environmental gates.** Visitation rate is modelled as `λ = λ_max · f_T · f_W · f_VPD · f_H`
+  — temperature, wind, humidity (via vapour-pressure deficit), and hour-of-day gates — so counts
+  from a cold, windy hour are comparable to a warm, calm one, and weather is treated as the
+  confounder it is (it moves both visits *and* fruit set).
+- **Saturating dose–response.** Fruit set is a bounded proportion following a decelerating,
+  saturating curve — a Hill / logistic form
+  `FruitSet(D) = P_self + (P_max − P_self) · D^n/(k^n + D^n)`, fitted as a **binomial GLMM** with
+  plant/orchard/date random effects and a flower-type (bisexual vs. functionally male) structural
+  component. Small-sample, no-anchor regime → **Bayesian fit with cross-crop priors** and
+  **uncertainty propagated into every yield number** (no point estimate without an interval).
+
+Full derivation, formulas, pomegranate biology, and the `src/ml_models/` build order live in the
+ML-team modeling reference (`Bee_a_Hero_Unified_ML_Research`). **Status:** no fitted pomegranate
+curve yet — the blocker is data collection (fruit-set labels, flower-type labels, cross-time
+flower identity), not tooling. The honest interim deliverable is the modeling code validated on
+simulated data.
+
+## 4. LLM stage — grounded reporting 🟡
+
+`src/llm_reporting/` turns model output into a plain-language report under a strict **grounding
+contract**: use only fields present in the structured input; never compute or invent a number;
+omit missing topics; never speculate on causes (weather, pests, species effectiveness) unless
+that exact field is present; always label model estimates as estimates. The model *uses* weather
+as a fitted feature; the report may only *restate* weather the pipeline measured. **Status:**
+prompt + schema designed; scaffolding.
+
+---
+
+## 5. Repository structure
 
 ```
-src/cv_engine/
-├── prepare_detect.py    # build YOLO detection sets from data/raw (flower + 5-class insect)
-├── video_detect.py      # flower+insect boxes/IDs/type (BoT-SORT) + landing episodes + CSVs
-├── train.py             # YOLO26 fine-tuning (imgsz, mixup/copy-paste, auto-resume friendly)
-├── honeybee_clf.py      # honeybee-vs-other-bee subclassifier (run on bee crops in video_detect)
-└── visit_counter.py     # FlowerTracker + shared helpers
-notebooks/                          # shared slot scheme (matches main; teams fill their own)
-├── 00_data_ready.ipynb             # data prep
-├── 01_eda.ipynb                    # exploratory analysis
-├── 02_cv_tests.ipynb               # CV — detection + tracking (this branch); §5 = one-shot test
-├── 03_ml_prototypes.ipynb          # ML slot
-└── 04_llm_prompts.ipynb            # LLM slot
-full_notebooks/02_cv_tests_full.ipynb   # self-contained CV notebook (no import src)
-data/interim/cv_runs/{flower_det2,insect_multidet}_v2_yolo26m/weights/best.pt   # committed
-data/interim/cv_runs/honeybee_clf/best.pt                                    # committed
-test_video_result/ALL_landings.csv, ALL_flower_summary.csv                   # committed team CSVs
+notebooks/                       # shared slot scheme (all branches); §5 of 02_cv = one-shot test
+├── 00_data_ready.ipynb          # data prep
+├── 01_eda.ipynb                 # exploratory analysis
+├── 02_cv.ipynb                  # CV — detection + tracking + landings   (import src)
+├── 03_ml.ipynb                  # ML slot
+└── 04_llm.ipynb                 # LLM slot
+full_notebooks/                  # self-contained variants (no import src) for a clean machine
+├── 00_data_ready_full.ipynb
+├── 01_eda_full.ipynb
+└── 02_cv_full.ipynb
+src/
+├── data_pipeline/               # iNaturalist prep, EDA, label tools, flower dataset builders
+├── cv_engine/
+│   ├── prepare_detect.py        # build YOLO detection sets (flower + 5-class insect)
+│   ├── train.py                 # YOLO26 fine-tuning (imgsz, mixup/copy-paste)
+│   ├── video_detect.py          # flower+insect boxes/IDs/type (BoT-SORT) + landing episodes + CSVs
+│   ├── honeybee_clf.py          # honeybee-vs-other-bee subclassifier (run on bee crops)
+│   └── visit_counter.py         # FlowerTracker + shared helpers
+├── ml_models/                   # ML slot (scaffolding)
+└── llm_reporting/               # LLM slot (scaffolding)
+data/interim/cv_runs/{flower_det2,insect_multidet}_v2_yolo26m/weights/best.pt   # committed (best)
+data/interim/cv_runs/honeybee_clf/best.pt                                       # committed (best)
+test_video_result/ALL_landings.csv, ALL_flower_summary.csv                      # committed team CSVs
 ```
 
-## Training datasets (Act-2, to retrain on the server)
+## 6. Retraining the detectors (Act-2, on the server)
 
-Committed weights let you run inference immediately. To **retrain**, download these
-into `data/raw/` (git-ignored) and run `prepare_detect` then `train` — see
+Committed weights let you run inference immediately. To **retrain**, download these into
+`data/raw/` (git-ignored) and run `prepare_detect` then `train` — see
 `data/raw/DATASETS_TO_DOWNLOAD.md`:
 
 | Dataset | Use | Source |
@@ -171,20 +213,20 @@ into `data/raw/` (git-ignored) and run `prepare_detect` then `train` — see
 ```bash
 python -m src.cv_engine.prepare_detect both          # build flower + insect datasets (+ iNat aug)
 python -m src.cv_engine.train --data data/interim/flower_det2/data.yaml \
-    --name flower_det2_yolo26m --model yolo26m.pt --epochs 100 --imgsz 640 --batch 8
+    --name flower_det2_v2_yolo26m --model yolo26m.pt --epochs 100 --imgsz 768 --batch 8
 python -m src.cv_engine.train --data data/interim/insect_multidet/data.yaml \
-    --name insect_multidet_yolo26m --model yolo26m.pt --epochs 70 --imgsz 800 --batch 4 \
+    --name insect_multidet_v2_yolo26m --model yolo26m.pt --epochs 70 --imgsz 768 --batch 4 \
     --mixup 0.1 --copy-paste 0.1
+python -m src.cv_engine.honeybee_clf --model efficientnet_b0 --epochs 30 --batch 16
 ```
 
-## Reproducibility
+## 7. Reproducibility
 
-Everything is seeded (`SEED = 42` in `src/config.py`) and deterministic; paths
-resolve relative to the repo root, so there is nothing machine-specific to
-configure. Training forces the `fork` start method (Python 3.14 fix) and is
-Windows-safe.
+Everything is seeded (`SEED = 42` in `src/config.py`) and deterministic; paths resolve relative
+to the repo root, so there is nothing machine-specific to configure. Training forces the `fork`
+start method (Python 3.14 fix) and is Windows-safe.
 
-## Team
+## 8. Team
 
 | Member | Role |
 |--------|------|
