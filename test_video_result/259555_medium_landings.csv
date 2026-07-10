@@ -1,5 +1,5 @@
 video,flower_id,flower_species,track_id,insect_type,is_honeybee,t_enter_s,t_exit_s,landing_s,is_real_landing,flower_detected,timestamp,pollination_weight,conf_mean
-259555_medium,flower_1,,10,honeybee,True,8.64,8.68,0.04,0,detected,,10.0,0.744
-259555_medium,flower_1,,16,honeybee,True,16.82,16.82,0.0,0,detected,,10.0,0.314
-259555_medium,flower_1,,17,honeybee,True,20.82,20.82,0.0,0,detected,,10.0,0.315
+259555_medium,flower_2,,10,honeybee,True,8.64,8.68,0.04,0,detected,,10.0,0.744
+259555_medium,flower_3,,16,honeybee,True,16.82,16.82,0.0,0,detected,,10.0,0.314
+259555_medium,flower_2,,17,honeybee,True,20.82,20.82,0.0,0,detected,,10.0,0.315
 259555_medium,flower_1,,1,honeybee,True,0.0,30.46,30.46,1,detected,,10.0,0.888

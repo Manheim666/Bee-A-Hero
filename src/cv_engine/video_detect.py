@@ -7,8 +7,10 @@ Single real-time camera stream, resampled to a fixed **24 fps**. Per frame:
   2. Insects: multi-class YOLO26 detector (``bee, fly, beetle, bug, butterfly``)
      + BoT-SORT -> one **track ID + type** per insect. Each insect keeps its own
      colour (by track ID) so bee #1 and bee #2 are distinct.
-  3. Type: taken directly from the detector, **majority-voted over the track's life**
-     for stability (no separate classifier).
+  3. Type: taken directly from the detector, **confidence-weighted cumulative vote over
+     the track's life** for stability (no separate classifier). The on-screen label adds
+     hysteresis (a challenger must clearly out-weigh the current label to switch), so a
+     brief mislabel -- e.g. bee flickering to fly for a few frames -- does not flip it.
   4. Landing: a contiguous span where an insect is on a flower -- either its box centre
      is inside a flower ROI (detected) **or** it is near-motionless with no ROI (inferred,
      stationary formula, catches undetected flowers). Enter/exit/duration are recorded;
@@ -22,6 +24,9 @@ Outputs (to ``test_video_result/``):
   * ``<video>_flower_summary.csv``  -> one row / flower (per-type counts, total/mean dwell,
         pollination_score, species [NaN], timestamps [NaN for test videos])
   * annotated ``<video>_annotated.mp4`` (flower boxes + per-insect boxes/IDs + live counts)
+
+Setup (once):
+    pip install -r src/cv_engine/requirements-cv.txt   # torch, ultralytics, opencv
 
 CLI:
     python -m src.cv_engine.video_detect --video data/raw/Test_Video/clip.mp4 \
@@ -48,6 +53,14 @@ INSECT_TYPES = ["honeybee", "bee", "fly", "beetle", "bug", "butterfly"]
 MIN_LAND_S = 2.0          # dwell >= this = a *real* landing (feeding); shorter = fly-through
 STATIONARY_TAU = 0.5      # normalised speed (insect-body-lengths/s) below which = settled
 LAND_GRACE_S = 0.5        # bridge tracker flicker / brief exits inside one landing episode
+LABEL_SWITCH_MARGIN = 1.5 # displayed label only switches when the leader's cumulative vote
+                          #   weight is >= this * the current label's -> kills brief flips
+INSECT_BOX_SMOOTH = 0.5   # EMA on the drawn insect box -> damps butterfly wing-flap size swings
+INSECT_HOLD_MAX = 72      # keep drawing a lost insect box up to ~3s (24fps) so it doesn't blink;
+                          #   holding stops earlier if the box reaches the frame edge (insect left)
+INSECT_EDGE_FRAC = 0.02   # box within 2% of any frame border -> treat as left-frame, stop holding
+MIN_TRACK_DRAW = 3        # a track must be detected in >= this many frames before its box is drawn
+                          #   -> a 1-2 frame false blip (e.g. flower momentarily read as bee) never shows
 UNK_FLOWER_RADIUS = 2.0   # * sqrt(insect_area): attribute an inferred landing to a flower within,
                           #   else mint a synthetic flower_unk_N at that spot
 SCORE_CAP_S = 30.0        # cap one landing's duration contribution to the pollination score
@@ -62,6 +75,13 @@ def _color(tid: int):
     h = (tid * 0.61803398875) % 1.0
     r, g, b = colorsys.hsv_to_rgb(h, 0.85, 1.0)
     return int(b * 255), int(g * 255), int(r * 255)
+
+
+def _at_edge(box, W, H, frac):
+    """True if the box hugs a frame border -> the insect has likely left the view."""
+    m = frac * max(W, H)
+    x1, y1, x2, y2 = box
+    return x1 <= m or y1 <= m or x2 >= W - m or y2 >= H - m
 
 
 def _speed_norm(prev_c, prev_t, c, t, area):
@@ -117,7 +137,8 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
     stride = max(1, round(in_fps / target_fps))
     out_fps = in_fps / stride
 
-    votes: dict[int, Counter] = defaultdict(Counter)          # track -> detector type votes
+    votes: dict[int, Counter] = defaultdict(Counter)          # track -> conf-weighted type votes
+    disp: dict[int, str] = {}                                 # track -> sticky display label (hysteresis)
     bee_votes: dict[int, Counter] = defaultdict(Counter)      # track -> honeybee/bee votes
     st: dict[int, dict] = {}                                   # track -> dwell state
     unk_reg: dict[str, tuple] = {}                            # synthetic flower id -> centre
@@ -177,14 +198,21 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
             confs = b.conf.cpu().numpy() if b.conf is not None else [0.0] * len(ids)
             for tid, box, c_id, cf in zip(ids, xyxy, cls, confs):
                 present.add(tid)
-                votes[tid][names[c_id]] += 1
-                typ = votes[tid].most_common(1)[0][0]          # stable majority type
+                votes[tid][names[c_id]] += float(cf)           # confidence-weighted cumulative vote
+                lead = votes[tid].most_common(1)[0][0]         # current top type by cumulative weight
+                cur_lab = disp.get(tid)
+                if cur_lab is None or (lead != cur_lab and
+                        votes[tid][lead] >= votes[tid][cur_lab] * LABEL_SWITCH_MARGIN):
+                    disp[tid] = lead                           # switch only on a clear margin (hysteresis)
+                typ = disp[tid]
                 if subclf is not None and typ == "bee":        # honeybee vs other-bee vote
                     x1, y1, x2, y2 = map(int, box)
                     bee_votes[tid][subclf.predict(frame[y1:y2, x1:x2])] += 1
                 cen = _center(box)
                 area = max(1.0, (box[2] - box[0]) * (box[3] - box[1]))
-                sub = st.setdefault(tid, {"prev_c": cen, "prev_t": t_s, "ep": None})
+                sub = st.setdefault(tid, {"prev_c": cen, "prev_t": t_s, "ep": None,
+                                          "n": 0, "dbox": None, "miss": 0, "dtyp": typ})
+                sub["n"] += 1                                  # frames this track was actually detected
                 s_norm = _speed_norm(sub["prev_c"], sub["prev_t"], cen, t_s, area)
                 sub["prev_c"], sub["prev_t"] = cen, t_s
                 cur = next((fid for fid, fb in flowers if _in(fb, cen)), None)
@@ -208,12 +236,26 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
                     ep = sub["ep"]
                     if ep is not None and t_s - ep["last_t"] > LAND_GRACE_S:
                         finalize(tid)
-                drawn.append((tid, box, typ))
+                # EMA-smooth the drawn box (damps butterfly wing-flap size swings), reset hold
+                sub["dbox"] = tuple(float(v) for v in box) if sub["dbox"] is None else \
+                    tuple(INSECT_BOX_SMOOTH * o + (1 - INSECT_BOX_SMOOTH) * v
+                          for o, v in zip(sub["dbox"], box))
+                sub["dtyp"], sub["miss"] = typ, 0
+                if sub["n"] >= MIN_TRACK_DRAW:                 # persistence gate: skip transient false blips
+                    drawn.append((tid, sub["dbox"], typ))
         # tracks that vanished this frame: finalize once past the grace window
         for tid, sub in list(st.items()):
             ep = sub.get("ep")
             if tid not in present and ep is not None and t_s - ep["last_t"] > LAND_GRACE_S:
                 finalize(tid)
+        # brief/long drop-out: keep drawing the last insect box until it leaves the frame or the
+        # hold cap is hit -> box stays put instead of blinking/vanishing mid-scene
+        for tid, sub in st.items():
+            if (tid not in present and sub.get("dbox") is not None
+                    and sub["n"] >= MIN_TRACK_DRAW and sub["miss"] < INSECT_HOLD_MAX
+                    and not _at_edge(sub["dbox"], W, H, INSECT_EDGE_FRAC)):
+                sub["miss"] += 1
+                drawn.append((tid, sub["dbox"], sub["dtyp"]))
         if writer is not None:
             writer.write(_annotate(frame, flowers, drawn, flower_count))
     for tid in list(st.keys()):
