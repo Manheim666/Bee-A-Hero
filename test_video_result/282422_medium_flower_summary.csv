@@ -1,3 +1,4 @@
 video,flower_id,flower_species,n_landings,n_real_landings,n_honeybee,n_bee,n_fly,n_beetle,n_bug,n_butterfly,total_landing_s,mean_landing_s,pollination_score,timestamp_first,timestamp_last
-282422_medium,flower_1,,5,3,3,0,0,0,0,0,57.96,19.32,472.0,,
+282422_medium,flower_1,,4,2,2,0,0,0,0,0,57.96,28.98,380.8,,
 282422_medium,flower_2,,0,0,0,0,0,0,0,0,0.0,0.0,0.0,,
+282422_medium,flower_3,,1,0,0,0,0,0,0,0,0.0,0.0,0.0,,

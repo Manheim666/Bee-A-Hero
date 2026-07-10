@@ -1,7 +1,7 @@
 video,flower_id,flower_species,n_landings,n_real_landings,n_honeybee,n_bee,n_fly,n_beetle,n_bug,n_butterfly,total_landing_s,mean_landing_s,pollination_score,timestamp_first,timestamp_last
-11682866-hd_1080_1920_30fps,flower_1,,1,0,0,0,0,0,0,0,0.0,0.0,0.0,,
-11682866-hd_1080_1920_30fps,flower_2,,5,0,0,0,0,0,0,0,0.0,0.0,0.0,,
-11682866-hd_1080_1920_30fps,flower_3,,7,1,0,0,1,0,0,0,17.15,17.15,8.57,,
+11682866-hd_1080_1920_30fps,flower_1,,3,0,0,0,0,0,0,0,0.0,0.0,0.0,,
+11682866-hd_1080_1920_30fps,flower_2,,0,0,0,0,0,0,0,0,0.0,0.0,0.0,,
+11682866-hd_1080_1920_30fps,flower_3,,7,2,0,1,1,0,0,0,19.05,9.53,10.68,,
 11682866-hd_1080_1920_30fps,flower_4,,0,0,0,0,0,0,0,0,0.0,0.0,0.0,,
 11682866-hd_1080_1920_30fps,flower_5,,0,0,0,0,0,0,0,0,0.0,0.0,0.0,,
 11682866-hd_1080_1920_30fps,flower_6,,0,0,0,0,0,0,0,0,0.0,0.0,0.0,,
