@@ -60,13 +60,17 @@ Fit on the real-calibrated data, the pipeline **recovers the real-derived asympt
 
 | crop | F0 (fit / true) | Fmax (fit / true, 95% CI) |
 |---|---|---|
-| cucumber | 0.00 / 0.00 | 0.71 / 0.71 ([0.70, 0.72]) |
-| pomegranate | 0.13 / 0.14 | 0.57 / 0.57 ([0.56, 0.58]) |
+| cucumber | 0.01 / 0.00 | 0.69 / 0.71 ([0.69, 0.70]) |
+| pomegranate | 0.15 / 0.14 | 0.58 / 0.57 ([0.57, 0.58]) |
 
 - **GLMM:** significant positive dose effect (more visits → more fruit set) after orchard/year random effects.
 - **Bayesian:** ceiling recovered; prior-sensitivity shift ≈ 0.001 (the data, not the prior, set Fmax).
 - **Model test (notebook §7):** predicts sensible, saturating fruit set + yield for any input dose.
 - **Real-data test (notebook §8):** the saturating curve explains **R² = 0.74** of real CropPol visitation→yield.
+- **Model optimization (notebook §9):** adding **weather covariates** + cross-validated
+  **hyperparameter tuning** raises predictive 5-fold CV ROC-AUC from **0.615 → 0.733 (+0.118)**;
+  the weather covariates provide the bulk of the lift (temperature/wind/humidity affect pollen
+  viability, research doc §5/§13).
 
 ---
 

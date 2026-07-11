@@ -28,7 +28,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src import config as C
 from src.ml_models.generate_bee_data import CROPS
 from src.ml_models import bee_hero_dataset as ds
 from src.ml_models.dose_response import fit_dose_response
@@ -36,16 +35,18 @@ from src.ml_models.uncertainty import propagate_yield
 from src.ml_models.glmm import fit_glmm
 from src.ml_models.bayesian import bayes_dose_response, prior_sensitivity
 
-# Default modeling inputs (paths anchored to the repo, portable across machines).
-# The fruit-set curve is fit on the processed training frame ``dataset_training_v8.csv``
-# (same dataset as notebooks/03_ml.ipynb); resolved from data/processed with a Downloads
-# fallback, matching the classifier notebook's resolver.
+# Repo paths derived from this file's location (self-contained, no config dependency,
+# portable across machines and branches).
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_PROCESSED_DIR = _REPO_ROOT / "data" / "processed"
+
+# Default modeling inputs; resolved from data/processed with a Downloads fallback.
 DATASET_CANDIDATES = (
-    C.PROCESSED_DIR / "dataset_training_v8.csv",
-    Path.home() / "Downloads" / "dataset_training_v8.csv",
+    _PROCESSED_DIR / "dataset_training_realcalibrated.csv",
+    Path.home() / "Downloads" / "dataset_training_realcalibrated.csv",
 )
-TRACKER_LANDINGS = C.REPO_ROOT / "test_video_result" / "ALL_landings.csv"
-OUT_JSON = C.REPO_ROOT / "models" / "dose_response_fit.json"
+TRACKER_LANDINGS = _REPO_ROOT / "test_video_result" / "ALL_landings.csv"
+OUT_JSON = _REPO_ROOT / "models" / "dose_response_realcalibrated.json"
 
 
 def _resolve_dataset(path: str | None) -> Path:
