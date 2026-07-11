@@ -1,0 +1,164 @@
+{
+  "curve": "FruitSet(V) = F0 + (Fmax - F0) * (1 - exp(-k * V))",
+  "fit_data": "dataset_training_realcalibrated.csv",
+  "gates": {
+    "dwell_min_s": 2.0,
+    "vel_max": 0.05,
+    "frac_min": 0.6
+  },
+  "crops": {
+    "cucumber": {
+      "F0": 0.0,
+      "Fmax": 0.7084,
+      "k": 0.13823,
+      "v_star": 21.704,
+      "ci95": {
+        "F0": [
+          0.0,
+          0.0035
+        ],
+        "Fmax": [
+          0.701,
+          0.7166
+        ],
+        "k": [
+          0.1322,
+          0.1445
+        ]
+      },
+      "n_flowers": 40000,
+      "n_events": 17681,
+      "aic": 47685.95,
+      "bic": 47711.74,
+      "baseline_logloss": 0.6864,
+      "model_logloss": 0.596,
+      "delta_logloss": -0.0904,
+      "truth": {
+        "F0": 0.0,
+        "Fmax": 0.71
+      },
+      "glmm": {
+        "dose_beta_per_sd": 0.6894,
+        "dose_beta_sd": 0.0272,
+        "dose_effect_positive": true,
+        "intercept": 0.2745,
+        "random_intercept_sd": {
+          "orchard_id": 0.1081,
+          "year": 0.0737
+        },
+        "n_flowers": 8000
+      },
+      "bayesian": {
+        "F0_anchor": 0.0059,
+        "Fmax_mean": 0.7093,
+        "Fmax_ci95": [
+          0.701,
+          0.7171
+        ],
+        "k_mean": 0.1361,
+        "k_ci95": [
+          0.1306,
+          0.1422
+        ],
+        "prior_Fmax": {
+          "mu": 0.72,
+          "sd": 0.1
+        },
+        "n_draws": 3600,
+        "prior_sensitivity_shift": 0.0
+      }
+    },
+    "pomegranate": {
+      "F0": 0.1269,
+      "Fmax": 0.5685,
+      "k": 0.14668,
+      "v_star": 20.453,
+      "ci95": {
+        "F0": [
+          0.1137,
+          0.1393
+        ],
+        "Fmax": [
+          0.5602,
+          0.5772
+        ],
+        "k": [
+          0.1339,
+          0.1602
+        ]
+      },
+      "n_flowers": 40000,
+      "n_events": 19175,
+      "aic": 52817.22,
+      "bic": 52843.01,
+      "baseline_logloss": 0.6923,
+      "model_logloss": 0.6601,
+      "delta_logloss": -0.0322,
+      "truth": {
+        "F0": 0.14,
+        "Fmax": 0.57
+      },
+      "glmm": {
+        "dose_beta_per_sd": 0.3534,
+        "dose_beta_sd": 0.0235,
+        "dose_effect_positive": true,
+        "intercept": -0.077,
+        "random_intercept_sd": {
+          "orchard_id": 0.1251,
+          "year": 0.084
+        },
+        "n_flowers": 8000
+      },
+      "bayesian": {
+        "F0_anchor": 0.1368,
+        "Fmax_mean": 0.5702,
+        "Fmax_ci95": [
+          0.5615,
+          0.5794
+        ],
+        "k_mean": 0.1419,
+        "k_ci95": [
+          0.1322,
+          0.1534
+        ],
+        "prior_Fmax": {
+          "mu": 0.72,
+          "sd": 0.1
+        },
+        "n_draws": 3600,
+        "prior_sensitivity_shift": 0.001
+      }
+    }
+  },
+  "notes": [
+    "Fit on dataset_training_v8.csv, whose labels are synthetic (no real fruit-set labels exist yet, research doc Section 16); the effective dose V is reconstructed from the per-flower aggregates since v8 drops the raw V column. Recovery of the per-crop floor/ceiling (p_self_used/p_cross_used) validates the machinery, not real-orchard accuracy.",
+    "Three model layers are reported per crop: the frequentist saturation curve, a binomial GLMM with orchard/year random intercepts (glmm), and a Bayesian fit with a cross-crop prior on Fmax plus a prior-sensitivity check (bayesian). A small prior_sensitivity_shift means the data (not the prior) drive the ceiling.",
+    "v8 carries a genuine visit->fruit-set signal (dose/label corr ~0.24) and includes near-zero-dose flowers, so both the floor F0 and ceiling Fmax are recovered accurately for both crops (no upward F0 bias). fit_dose_response(anchor_f0=...) / (fmax_anchor=...) still accept bagging / open-pollination controls when real data arrives.",
+    "Tracker application uses the v8-fit curve on the real effective dose. The two doses share a definition but not a scale, so the yield figure is illustrative until the curve is refit on real (dose, fruit_set) pairs joined via bee_hero_dataset.join_fruit_set_labels once field labels + cross-time flower identity exist.",
+    "Only the dwell gate applies on real tracker output; velocity and fraction_on are not yet emitted by video_detect.py."
+  ],
+  "tracker_application": {
+    "source": "ALL_landings.csv",
+    "applied_gates": [
+      "dwell"
+    ],
+    "n_flowers_observed": 26,
+    "n_qualifying_visits_total": 52,
+    "mean_effective_dose": 5.3217,
+    "yield_estimate": {
+      "dose": 5.321691116120904,
+      "n_flowers": 1200,
+      "mean_fruit_mass_kg": 0.3,
+      "fruit_set_mean": 0.36617289992124036,
+      "fruit_set_ci95": [
+        0.3565744550603878,
+        0.37516162856865637
+      ],
+      "yield_kg_mean": 131.63400000000001,
+      "yield_kg_ci95": [
+        121.5,
+        142.20749999999998
+      ]
+    }
+  }
+}
