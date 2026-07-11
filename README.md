@@ -75,6 +75,11 @@ Fit on the real-calibrated data, the pipeline **recovers the real-derived asympt
 > **Note on `k_synthetic`:** the generative rate constant varies **per flower** (drawn around a
 > per-crop base value), matching the v8 data design — it is generator metadata, not a model input.
 
+> **CV alignment:** the per-flower species columns now use the **same taxonomy the CV pipeline
+> emits** — `nq_honeybee, nq_bee, nq_fly, nq_beetle, nq_bug, nq_butterfly` — so the ML features
+> map 1:1 to the tracker's `insect_type` (was previously bumblebee/stingless/squash, which the
+> detector cannot produce).
+
 ---
 
 ## Run it
