@@ -1,6 +1,6 @@
 {
   "curve": "FruitSet(V) = F0 + (Fmax - F0) * (1 - exp(-k * V))",
-  "fit_data": "dataset_training_realcalibrated.csv",
+  "fit_data": "dataset_training_v11.csv",
   "gates": {
     "dwell_min_s": 2.0,
     "vel_max": 0.05,
@@ -8,125 +8,125 @@
   },
   "crops": {
     "cucumber": {
-      "F0": 0.0127,
-      "Fmax": 0.6905,
-      "k": 0.11421,
-      "v_star": 26.266,
+      "F0": 0.0549,
+      "Fmax": 0.7867,
+      "k": 0.01421,
+      "v_star": 211.172,
       "ci95": {
         "F0": [
-          0.0029,
-          0.0239
+          0.0516,
+          0.0577
         ],
         "Fmax": [
-          0.6815,
-          0.6992
+          0.7742,
+          0.7974
         ],
         "k": [
-          0.1082,
-          0.1204
+          0.0134,
+          0.0153
         ]
       },
-      "n_flowers": 40000,
-      "n_events": 18022,
-      "aic": 49550.17,
-      "bic": 49575.96,
-      "baseline_logloss": 0.6882,
-      "model_logloss": 0.6193,
-      "delta_logloss": -0.0689,
+      "n_flowers": 31229,
+      "n_events": 7936,
+      "aic": 20806.04,
+      "bic": 20831.09,
+      "baseline_logloss": 0.5668,
+      "model_logloss": 0.333,
+      "delta_logloss": -0.2338,
       "truth": {
-        "F0": 0.0,
-        "Fmax": 0.71
+        "F0": 0.05,
+        "Fmax": 0.78
       },
       "glmm": {
-        "dose_beta_per_sd": 0.5988,
-        "dose_beta_sd": 0.0261,
+        "dose_beta_per_sd": 1.7886,
+        "dose_beta_sd": 0.0515,
         "dose_effect_positive": true,
-        "intercept": 0.2291,
+        "intercept": -1.0594,
         "random_intercept_sd": {
-          "orchard_id": 0.1061,
-          "year": 0.0805
+          "orchard_id": 0.0965,
+          "year": 0.1139
         },
         "n_flowers": 8000
       },
       "bayesian": {
-        "F0_anchor": 0.0018,
-        "Fmax_mean": 0.6893,
+        "F0_anchor": 0.0562,
+        "Fmax_mean": 0.7862,
         "Fmax_ci95": [
-          0.6811,
-          0.6986
+          0.7747,
+          0.7981
         ],
-        "k_mean": 0.1165,
+        "k_mean": 0.0141,
         "k_ci95": [
-          0.1115,
-          0.1224
+          0.0132,
+          0.0152
         ],
         "prior_Fmax": {
           "mu": 0.72,
           "sd": 0.1
         },
         "n_draws": 3600,
-        "prior_sensitivity_shift": 0.0005
+        "prior_sensitivity_shift": 0.0012
       }
     },
     "pomegranate": {
-      "F0": 0.1478,
-      "Fmax": 0.5779,
-      "k": 0.10807,
-      "v_star": 27.76,
+      "F0": 0.4469,
+      "Fmax": 0.6866,
+      "k": 0.00672,
+      "v_star": 446.506,
       "ci95": {
         "F0": [
-          0.1333,
-          0.1638
+          0.4398,
+          0.4527
         ],
         "Fmax": [
-          0.5693,
-          0.5883
+          0.6684,
+          0.7024
         ],
         "k": [
-          0.099,
-          0.1179
+          0.0055,
+          0.0084
         ]
       },
-      "n_flowers": 40000,
-      "n_events": 19319,
-      "aic": 53298.93,
-      "bic": 53324.72,
-      "baseline_logloss": 0.6926,
-      "model_logloss": 0.6662,
-      "delta_logloss": -0.0264,
+      "n_flowers": 30976,
+      "n_events": 15447,
+      "aic": 42000.99,
+      "bic": 42026.01,
+      "baseline_logloss": 0.6931,
+      "model_logloss": 0.6779,
+      "delta_logloss": -0.0153,
       "truth": {
-        "F0": 0.14,
-        "Fmax": 0.57
+        "F0": 0.45,
+        "Fmax": 0.68
       },
       "glmm": {
-        "dose_beta_per_sd": 0.372,
-        "dose_beta_sd": 0.0236,
+        "dose_beta_per_sd": 0.2915,
+        "dose_beta_sd": 0.0272,
         "dose_effect_positive": true,
-        "intercept": -0.0533,
+        "intercept": 0.0283,
         "random_intercept_sd": {
-          "orchard_id": 0.1037,
-          "year": 0.073
+          "orchard_id": 0.0955,
+          "year": 0.0663
         },
         "n_flowers": 8000
       },
       "bayesian": {
-        "F0_anchor": 0.1396,
-        "Fmax_mean": 0.5773,
+        "F0_anchor": 0.4475,
+        "Fmax_mean": 0.6872,
         "Fmax_ci95": [
-          0.5682,
-          0.5867
+          0.6691,
+          0.7064
         ],
-        "k_mean": 0.1106,
+        "k_mean": 0.0067,
         "k_ci95": [
-          0.1023,
-          0.1196
+          0.0053,
+          0.0084
         ],
         "prior_Fmax": {
           "mu": 0.72,
           "sd": 0.1
         },
         "n_draws": 3600,
-        "prior_sensitivity_shift": 0.001
+        "prior_sensitivity_shift": 0.0012
       }
     }
   },
@@ -149,15 +149,15 @@
       "dose": 5.321691116120904,
       "n_flowers": 1200,
       "mean_fruit_mass_kg": 0.3,
-      "fruit_set_mean": 0.3359246458360471,
+      "fruit_set_mean": 0.45528103753203963,
       "fruit_set_ci95": [
-        0.3271841294053431,
-        0.34375509921766484
+        0.4483640279650631,
+        0.46087130503121926
       ],
-      "yield_kg_mean": 120.75,
+      "yield_kg_mean": 163.56599999999997,
       "yield_kg_ci95": [
-        111.3,
-        131.99999999999997
+        154.485,
+        174.61499999999998
       ]
     }
   }
