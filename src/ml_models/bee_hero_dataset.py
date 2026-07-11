@@ -7,9 +7,9 @@ real tracker export ``ALL_landings.csv`` from ``cv_engine/video_detect.py`` — 
 the **three qualifying gates** (dwell, velocity, spatial overlap), and aggregates the
 qualifying visits into the per-flower **effective dose** ``V`` the curve consumes.
 
-The gate thresholds and the dwell-saturation constant are imported from
-``generate_bee_data`` so the labels and the modeling code share one definition and
-cannot drift apart.
+The gate thresholds and the dwell-saturation constant are defined here (see
+``DWELL_MIN`` / ``VEL_MAX`` / ``FRAC_MIN`` / ``TAU`` below) as the single source of truth
+for the modeling stage.
 
 Tracker contract (fixed input, do not change upstream):
   * synthetic ``visits.csv`` : flower_id, species, dwell_seconds, velocity, fraction_on, ...
@@ -28,7 +28,21 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.ml_models.generate_bee_data import DWELL_MIN, VEL_MAX, FRAC_MIN, TAU
+# --- Qualifying-gate thresholds + dwell-saturation constant -----------------
+# A visit qualifies when it clears all three gates; TAU sets how fast per-visit
+# pollen effectiveness saturates with dwell time. (Match the CV export's units.)
+DWELL_MIN = 2.0        # s   ; a real feeding visit dwells >= this
+VEL_MAX = 0.05         # frac-of-frame / s ; slow = real, fast = fly-by/mis-track
+FRAC_MIN = 0.60        # fraction of tracked frames overlapping the flower bbox
+TAU = 5.0              # s   ; dwell-saturation constant for per-visit pollen
+
+# --- Per-crop dose-response constants -----------------------------------------
+# Fallback ground-truth floor/ceiling for datasets that lack ``p_self_used`` /
+# ``p_cross_used`` columns; k = 3 / V* reaches ~95% of Fmax by dose V*.
+CROPS = [
+    {"crop": "pomegranate", "F0": 0.45, "Fmax": 0.95, "V_star": 8.0, "k": 3.0 / 8.0},
+    {"crop": "cucumber", "F0": 0.05, "Fmax": 0.95, "V_star": 18.0, "k": 3.0 / 18.0},
+]
 
 # Canonical per-visit schema the modeling stage works in. ``velocity`` and
 # ``fraction_on`` are optional (absent in the current real tracker export).
