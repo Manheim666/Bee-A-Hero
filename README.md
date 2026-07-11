@@ -68,9 +68,12 @@ Fit on the real-calibrated data, the pipeline **recovers the real-derived asympt
 - **Model test (notebook §7):** predicts sensible, saturating fruit set + yield for any input dose.
 - **Real-data test (notebook §8):** the saturating curve explains **R² = 0.74** of real CropPol visitation→yield.
 - **Model optimization (notebook §9):** adding **weather covariates** + cross-validated
-  **hyperparameter tuning** raises predictive 5-fold CV ROC-AUC from **0.615 → 0.733 (+0.118)**;
+  **hyperparameter tuning** raises predictive 5-fold CV ROC-AUC from **~0.61 → ~0.73 (+0.12)**;
   the weather covariates provide the bulk of the lift (temperature/wind/humidity affect pollen
   viability, research doc §5/§13).
+
+> **Note on `k_synthetic`:** the generative rate constant varies **per flower** (drawn around a
+> per-crop base value), matching the v8 data design — it is generator metadata, not a model input.
 
 ---
 
