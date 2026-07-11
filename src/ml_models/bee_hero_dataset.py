@@ -180,29 +180,44 @@ def aggregate_flowers(visits: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+#: default per-species pollination weights for the CV taxonomy (bees >> flies > butterflies),
+#: used only when a CV-schema frame lacks a precomputed ``pollination_score``.
+CV_SPECIES_W = {"n_honeybee": 10.0, "n_bee": 3.0, "n_fly": 1.0,
+                "n_beetle": 0.5, "n_bug": 0.3, "n_butterfly": 0.5}
+
+
 def effective_dose_from_aggregates(df: pd.DataFrame, *, tau: float = TAU) -> pd.Series:
-    """Effective dose ``V`` for an already-per-flower modeling frame (``dataset_training_v6``).
+    """Effective dose ``V`` for an already-per-flower modeling frame.
 
-    The processed training frame is aggregated one row per flower and carries the *result*
-    of the three qualifying gates (``n_qualifying_visits`` and per-species qualifying counts
-    ``nq_*``) plus the constant per-species weights ``w_*`` — but not the raw dose ``V``,
-    which is dropped as a generator-only column. This reconstructs the same
-    weight x dwell-saturation dose used per visit in :func:`visit_effectiveness`:
+    Handles two schemas automatically:
 
-        V = ( sum_species  w_species * nq_species ) * (1 - exp(-mean_dwell_s / tau)) * confidence
-
-    Species terms are paired by suffix (``nq_honeybee`` with ``w_honeybee`` etc.); a weight
-    column is treated as 1.0 if absent. ``mean_dwell_s`` and ``confidence`` are imputed with
-    their medians when missing.
+    * **CV-schema frame** (e.g. ``dataset_training_v11`` — mirrors ``video_detect.py``'s
+      ``ALL_flower_summary.csv``): if a ``pollination_score`` column exists it *is* the
+      effective dose (the CV pipeline's species-weighted, real-landing-summed score), so it
+      is returned directly. Failing that, the dose is built from the CV species counts
+      ``n_honeybee/n_bee/n_fly/n_beetle/n_bug/n_butterfly`` weighted by :data:`CV_SPECIES_W`
+      and modulated by ``mean_landing_s``.
+    * **Legacy v6/v8 frame**: reconstructs ``sum_species w_species*nq_species`` times a
+      dwell-saturation factor and detector confidence (the ``nq_*`` / ``w_*`` columns).
     """
+    # --- CV-schema (v11): the tracker already computed the weighted dose ---
+    if "pollination_score" in df.columns:
+        return df["pollination_score"].astype(float)
+    n_cols = [c for c in CV_SPECIES_W if c in df.columns]
+    if n_cols:
+        species = sum(df[c] * CV_SPECIES_W[c] for c in n_cols)
+        dwell = df["mean_landing_s"].fillna(df["mean_landing_s"].median()) \
+            if "mean_landing_s" in df else 0.0
+        return (species * (1.0 - np.exp(-dwell / tau))).astype(float)
+
+    # --- legacy v6/v8 schema: reconstruct from nq_*/w_* + dwell + confidence ---
     nq_cols = [c for c in df.columns if c.startswith("nq_")]
     if not nq_cols:
-        raise ValueError("no 'nq_*' species columns found; not a v6-style aggregate frame")
+        raise ValueError("frame has no 'pollination_score', CV 'n_*', or legacy 'nq_*' columns")
     species = pd.Series(0.0, index=df.index)
     for nq in nq_cols:
         w = "w_" + nq[len("nq_"):]
         species = species + df[nq] * (df[w] if w in df.columns else 1.0)
-
     dwell = df["mean_dwell_s"].fillna(df["mean_dwell_s"].median()) if "mean_dwell_s" in df \
         else 0.0
     conf = df["confidence"].fillna(1.0).clip(0.0, 1.0) if "confidence" in df else 1.0

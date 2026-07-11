@@ -36,19 +36,19 @@ Design rationale, formulas, and pomegranate biology are in `docs/ML_MODELING_RES
 
 ---
 
-## Data: the "synthetic-from-real" approach
+## Data: `dataset_training_v11.csv` (CV-schema aligned)
 
 No real per-flower **pomegranate** fruit-set labels exist yet, so the notebook trains on a
-**real-calibrated** dataset: synthetic feature rows, but fruit-set labels drawn from
-dose–response curves **fitted to real CropPol field data** (Allen-Perkins et al. 2022):
+**synthetic** frame that **mirrors the CV pipeline's output** (`video_detect.py` →
+`ALL_flower_summary.csv`): per-flower landing counts, the CV insect categories
+(`n_honeybee, n_bee, n_fly, n_beetle, n_bug, n_butterfly`), `pollination_score`, weather, and a
+synthetic `fruit_set_label` drawn from a known dose-response curve.
 
-- cucumber ← *Cucurbita pepo* (squash), real fit **R² = 0.74**
-- pomegranate ← *Brassica napus* (rapeseed), real fit **R² = 0.39**
-
-So the outcomes are grounded in real crop-pollination biology, not invented.
+Because the columns and species **match the CV output 1:1**, a real CV run feeds straight into
+the pipeline — no schema translation. The effective dose `V` is the CV `pollination_score`.
 
 > **Data files are git-ignored** (large / regenerable). The notebook expects
-> `data/processed/dataset_training_realcalibrated.csv` and `data/processed/croppol_field.csv`
+> `data/processed/dataset_training_v11.csv` and `data/processed/croppol_field.csv`
 > plus `test_video_result/ALL_landings.csv`. A ready-to-run bundle with the data is shared
 > separately (`bee-ml-share.zip`).
 
@@ -56,37 +56,28 @@ So the outcomes are grounded in real crop-pollination biology, not invented.
 
 ## Results
 
-Fit on the real-calibrated data, the pipeline **recovers the real-derived asymptotes**:
+Fit on v11, the pipeline **recovers the known asymptotes** almost exactly:
 
 | crop | F0 (fit / true) | Fmax (fit / true, 95% CI) |
 |---|---|---|
-| cucumber | 0.01 / 0.00 | 0.69 / 0.71 ([0.69, 0.70]) |
-| pomegranate | 0.15 / 0.14 | 0.58 / 0.57 ([0.57, 0.58]) |
+| cucumber | 0.055 / 0.05 | 0.787 / 0.78 ([0.77, 0.80]) |
+| pomegranate | 0.447 / 0.45 | 0.687 / 0.68 ([0.67, 0.70]) |
 
 - **GLMM:** significant positive dose effect (more visits → more fruit set) after orchard/year random effects.
-- **Bayesian:** ceiling recovered; prior-sensitivity shift ≈ 0.001 (the data, not the prior, set Fmax).
+- **Bayesian:** ceiling recovered; small prior-sensitivity shift (the data, not the prior, set Fmax).
 - **Model test (notebook §7):** predicts sensible, saturating fruit set + yield for any input dose.
 - **Real-data test (notebook §8):** the saturating curve explains **R² = 0.74** of real CropPol visitation→yield.
-- **Model optimization (notebook §9):** adding **weather covariates** + cross-validated
-  **hyperparameter tuning** raises predictive 5-fold CV ROC-AUC from **~0.61 → ~0.73 (+0.12)**;
-  the weather covariates provide the bulk of the lift (temperature/wind/humidity affect pollen
-  viability, research doc §5/§13).
 
-> **Note on `k_synthetic`:** the generative rate constant varies **per flower** (drawn around a
-> per-crop base value), matching the v8 data design — it is generator metadata, not a model input.
-
-> **CV alignment:** the per-flower species columns now use the **same taxonomy the CV pipeline
-> emits** — `nq_honeybee, nq_bee, nq_fly, nq_beetle, nq_bug, nq_butterfly` — so the ML features
-> map 1:1 to the tracker's `insect_type` (was previously bumblebee/stingless/squash, which the
-> detector cannot produce).
+> **CV alignment:** v11's species and columns are the **exact CV taxonomy** the tracker emits, so
+> the ML stage integrates with the CV output directly — no `nq_*`/`w_*` translation needed.
 
 ---
 
 ## Run it
 
 ```bash
-# one-shot pipeline (prints params + yield, writes models/dose_response_realcalibrated.json)
-python -m src.ml_models.train --dataset data/processed/dataset_training_realcalibrated.csv
+# one-shot pipeline (prints params + yield, writes models/dose_response_v11.json)
+python -m src.ml_models.train --dataset data/processed/dataset_training_v11.csv
 
 # or open the notebook and Run All (portable Python 3 kernel, no path edits needed)
 notebooks/03_ml_dose_response.ipynb

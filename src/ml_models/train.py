@@ -42,11 +42,11 @@ _PROCESSED_DIR = _REPO_ROOT / "data" / "processed"
 
 # Default modeling inputs; resolved from data/processed with a Downloads fallback.
 DATASET_CANDIDATES = (
-    _PROCESSED_DIR / "dataset_training_realcalibrated.csv",
-    Path.home() / "Downloads" / "dataset_training_realcalibrated.csv",
+    _PROCESSED_DIR / "dataset_training_v11.csv",
+    Path.home() / "Downloads" / "dataset_training_v11.csv",
 )
 TRACKER_LANDINGS = _REPO_ROOT / "test_video_result" / "ALL_landings.csv"
-OUT_JSON = _REPO_ROOT / "models" / "dose_response_realcalibrated.json"
+OUT_JSON = _REPO_ROOT / "models" / "dose_response_v11.json"
 
 
 def _resolve_dataset(path: str | None) -> Path:
