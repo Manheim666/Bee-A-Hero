@@ -1,0 +1,25 @@
+# --- Python artifacts ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Large data / model weights (shared separately via bee-ml-share.zip, not in git) ---
+data/
+test_video_result/
+runs/
+*.pt
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
