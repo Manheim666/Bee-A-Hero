@@ -28,8 +28,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.ml_models.generate_bee_data import CROPS
 from src.ml_models import bee_hero_dataset as ds
+from src.ml_models.bee_hero_dataset import CROPS
 from src.ml_models.dose_response import fit_dose_response
 from src.ml_models.uncertainty import propagate_yield
 from src.ml_models.glmm import fit_glmm
