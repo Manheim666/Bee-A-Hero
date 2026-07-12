@@ -1,0 +1,203 @@
+:root {
+  --honey: #f6a623; /* primary — buttons, highlights */
+  --honey-deep: #e07b00; /* hover / gradients */
+  --amber-glow: #ffd666; /* soft accents, chart fills */
+  --bee-black: #241e17; /* text, nav */
+  --charcoal: #3a342c; /* secondary text */
+  --cream: #fffbf2; /* page background */
+  --card: #ffffff; /* cards */
+  --border: #efe3cc; /* hairlines */
+  --leaf: #6bbf59; /* flower / nature accent */
+  --pollinator: #f6a623; /* warm = pollinator (bee/pollen) */
+  --non: #4c8db5; /* cool = non-pollinator */
+  --shadow: 0 6px 20px rgba(90, 60, 10, 0.1);
+  --radius: 16px;
+  --font: "Poppins", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--cream);
+  color: var(--bee-black);
+  /* subtle honeycomb wash */
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(246, 166, 35, 0.06) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+}
+
+a {
+  color: var(--honey-deep);
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.4em;
+  color: var(--bee-black);
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.btn {
+  background: linear-gradient(135deg, var(--honey), var(--honey-deep));
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-weight: 600;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+
+.btn:hover {
+  opacity: 0.92;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--honey-deep);
+  border: 1px solid var(--border);
+}
+
+.input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--font);
+  font-size: 0.95rem;
+  background: #fff;
+}
+
+.input:focus {
+  outline: 2px solid var(--amber-glow);
+  border-color: var(--honey);
+}
+
+.muted {
+  color: var(--charcoal);
+  opacity: 0.75;
+}
+
+.pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.pill-queued {
+  background: #f0ebe0;
+  color: var(--charcoal);
+}
+.pill-processing {
+  background: var(--amber-glow);
+  color: var(--bee-black);
+}
+.pill-done {
+  background: #dff3d8;
+  color: #2f6b23;
+}
+.pill-failed {
+  background: #fbdcd6;
+  color: #a13020;
+}
+
+.grid {
+  display: grid;
+  gap: 20px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid var(--amber-glow);
+  border-top-color: var(--honey-deep);
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* honeycomb backdrop for hero-style headers */
+.honeycomb-header {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #fff6e2, #ffe9c2);
+  border: 1px solid var(--border);
+  padding: 34px 28px;
+  margin-bottom: 24px;
+}
+
+.honeycomb-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image: radial-gradient(
+    circle at 2px 2px,
+    rgba(224, 123, 0, 0.18) 2px,
+    transparent 0
+  );
+  background-size: 26px 26px;
+  pointer-events: none;
+}
+
+.honeycomb-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+}
