@@ -18,6 +18,10 @@ test_video_result/
 runs/
 *.pt
 
+# --- Runtime ML outputs (regenerable; the committed curve is models/dose_response_v11.json) ---
+data/processed/dataset_training_v11.csv
+models/yield_report.json
+
 # --- OS / editor cruft ---
 .DS_Store
 Thumbs.db
