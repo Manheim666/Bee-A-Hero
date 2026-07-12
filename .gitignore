@@ -68,12 +68,12 @@ test_video_result/*
 !test_video_result/csv/
 test_video_result/csv/*
 !test_video_result/csv/*.csv
-# live-camera runtime outputs change constantly — don't commit them
-test_video_result/csv/live_landings.csv
-test_video_result/csv/daily_flower_counts.csv
-
-# per-machine live camera config (device indices / RTSP URLs) — keep only the example
-data/camera/sources.txt
+# Camera lane: per-machine config + constantly-changing live outputs. Keep only the examples,
+# so the camera CSVs never mix with test-video results and never enter the diff.
+data/camera/*
+!data/camera/.gitkeep
+!data/camera/sources.txt.example
+!data/camera/weather.json.example
 
 # --- Downloaded training datasets (large, never pushed) ---
 data/raw/*.coco/
