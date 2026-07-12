@@ -134,6 +134,29 @@ For each video it writes, grouped under `test_video_result/`:
 and aggregates all videos into `csv/ALL_landings.csv` + `csv/ALL_flower_summary.csv` for the ML/LLM
 stages. Useful knobs: `--conf 0.2` (insect sensitivity), `--flower-conf 0.15`, `--target-fps 24`.
 
+### 2.3 Live cameras or test videos — one auto-selecting runner
+
+`src.cv_engine.run_pipeline` picks the input with one rule (`src/cv_engine/source.py`), shared with
+the web viewer so they never disagree:
+
+- **Camera mode** — if `data/camera/sources.txt` lists ≥1 reachable camera (device index, RTSP/HTTP
+  URL, or a file path), each is streamed **live**. Every time an insect lands on and leaves a flower,
+  a row is appended to `test_video_result/csv/live_landings.csv` and the per-flower
+  `daily_flower_counts.csv` is updated on the spot.
+- **Video mode** — no active camera → falls back to the `data/raw/Test_Video/` batch → `ALL_*.csv`.
+
+```bash
+cp data/camera/sources.txt.example data/camera/sources.txt   # then list your cameras (or a test clip)
+python -m src.cv_engine.run_pipeline                          # auto: camera if active, else videos
+```
+
+**Web viewer** — a minimal page showing the current source + live/daily counts, auto-refreshing:
+
+```bash
+pip install -r src/webapp/requirements-web.txt
+python -m src.webapp.app          # http://127.0.0.1:5000  (same source rule as the pipeline)
+```
+
 ## 3. ML stage — visits → fruit set → yield 🟡
 
 The CV CSVs are the **input**; fruit set and yield are the **output**. The modeling approach
