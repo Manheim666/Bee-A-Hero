@@ -18,18 +18,12 @@ Camera video
    │
    ▼
 [ ML ]    visits → effective dose → fruit-set dose–response    notebooks/03_ml
-          → yield band, with uncertainty                       src/ml_models/         ✅ integrated
+          → yield, with uncertainty                            src/ml_models/         🟡 scaffolding
    │
    ▼
 [ LLM ]   grounded, farmer-friendly pollination report         notebooks/04_llm
-                                                                src/llm_reporting/     ✅ integrated
+                                                                src/llm_reporting/     🟡 scaffolding
 ```
-
-The stages are wired end-to-end: the CV tracker writes `test_video_result/csv/ALL_*.csv`; the ML
-stage (`python -m src.ml_models.train`) applies the committed fruit-set curve
-(`models/dose_response_v11.json`) to those landings and writes a yield band; the LLM stage
-(`python -m src.llm_reporting.generate`) turns the grounded CV + ML numbers into a grower report
-(Claude `claude-opus-4-8` when a key is present, else a deterministic offline template).
 
 The project is organised as a **four-stage pipeline on four branches** that merge into `main`:
 
@@ -37,8 +31,8 @@ The project is organised as a **four-stage pipeline on four branches** that merg
 |---|---|---|---|---|
 | **Data** | `data` | `00_data_ready`, `01_eda` | `src/data_pipeline/` | ✅ built |
 | **CV** | `cv` | `02_cv` | `src/cv_engine/` | ✅ trained + shipped weights |
-| **ML** | `ml` | `03_ml` | `src/ml_models/` | ✅ integrated onto `main` (fruit-set curve + yield band) |
-| **LLM** | `llm` | `04_llm` | `src/llm_reporting/` | ✅ integrated onto `main` (grounded report, Claude + offline) |
+| **ML** | `ml` | `03_ml` | `src/ml_models/` | 🟡 designed, scaffolding |
+| **LLM** | `llm` | `04_llm` | `src/llm_reporting/` | 🟡 designed, scaffolding |
 
 `main` is the integration branch and holds the canonical structure; each team fills its own
 notebook slot and source package, then merges. The slots not owned by a stage are kept as empty
