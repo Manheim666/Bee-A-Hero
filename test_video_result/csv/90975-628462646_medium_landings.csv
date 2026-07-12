@@ -1,0 +1,4 @@
+video,flower_id,flower_species,track_id,insect_type,is_honeybee,t_enter_s,t_exit_s,landing_s,is_real_landing,flower_detected,timestamp,pollination_weight,conf_mean
+90975-628462646_medium,flower_1,,1,honeybee,True,0.0,9.83,9.83,1,detected,,10.0,0.542
+90975-628462646_medium,flower_1,,1,honeybee,True,10.5,11.1,0.6,0,detected,,10.0,0.573
+90975-628462646_medium,flower_1,,1,honeybee,True,11.97,12.5,0.53,0,detected,,10.0,0.572
