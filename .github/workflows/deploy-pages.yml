@@ -1,0 +1,54 @@
+name: Deploy Bee-A-Hero frontend to GitHub Pages
+
+# Builds the React/Vite frontend (bee-a-hero-app/frontend) and publishes the static site to
+# GitHub Pages. Pages is static-only, so the FastAPI backend must be hosted elsewhere; set the
+# repo variable VITE_API_URL to its URL (Settings > Secrets and variables > Actions > Variables).
+# Without it the site loads but API calls fall back to http://localhost:8000.
+#
+# One-time setup: repo Settings > Pages > Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [web]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bee-a-hero-app/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: bee-a-hero-app/frontend/package-lock.json
+      - run: npm ci
+      - name: Build (base = /<repo>/ for project Pages)
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: npm run build -- --base=/Bee-A-Hero/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: bee-a-hero-app/frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
