@@ -45,15 +45,18 @@ Both detectors are **YOLO26m**. v2 changed two things over v1:
 - **imgsz 640 → 768** (more pixels on small insects on flowers).
 - **stronger augmentation**: `mixup` + `copy-paste` (more object variety per image).
 
+Best-checkpoint validation metrics (argmax of mAP@50-95 — the same checkpoint that ships as
+`best.pt`, and the same figure the notebooks and presentation quote):
+
 | Detector | Version | imgsz | mAP@50 | mAP@50-95 | Precision | Recall |
 |---|---|---|---|---|---|---|
-| Flower  | v1 | 640 | 0.786 | 0.498 | — | — |
-| Flower  | **v2 (used)** | 768 | **0.806** | **0.532** | 0.784 | 0.731 |
-| Insect  | v1 | 640 | 0.604 | 0.397 | — | — |
-| Insect  | **v2 (used)** | 768 | **0.664** | **0.472** | 0.706 | 0.646 |
+| Flower  | v1 | 640 | 0.776 | 0.506 | 0.794 | 0.683 |
+| Flower  | **v2 (used)** | 768 | **0.808** | **0.537** | 0.790 | 0.738 |
+| Insect  | v1 | 640 | 0.618 | 0.404 | 0.729 | 0.581 |
+| Insect  | **v2 (used)** | 768 | **0.669** | **0.476** | 0.734 | 0.623 |
 
 v2 is the deployed ("v3 results") model in every notebook/CSV/video. The insect detector
-gained the most (**+0.06 mAP@50**) from the imgsz + augmentation change.
+gained the most (**+0.05 mAP@50**, recall **0.581 → 0.623**) from the imgsz + augmentation change.
 
 ### 2.3 Training cost (measured, RTX-class GPU, 40 epochs each)
 | Detector | Epochs | Wall-clock | ≈ per epoch |
@@ -158,16 +161,30 @@ post-processing on top of the frozen detectors.
   that is a precision limit only a detector change can fix (see §6).
 - **Param:** `MIN_TRACK_DRAW = 3`.
 
+### 4.8 Whole-flower box read as an insect (a flower-sized "fly")
+- **Cause:** the detector occasionally fires a **flower-sized box** (30–60 % of the frame) labelled
+  `fly`/`bee` — the flower core read as a giant insect. This is both "box bigger than the bee" and
+  "flower mistaken for a fly".
+- **Fix:** **size gate** — reject any insect detection whose box area exceeds
+  `MAX_INSECT_FRAME_FRAC (0.18)` of the frame. A real insect here is <10 % of the frame; a
+  flower-sized box is unambiguously a false positive, so it is dropped from tracking, drawing **and**
+  landings entirely (not merely hidden).
+- **Effect:** eliminated the giant `fly #NN` boxes on busy flowers; total landings on the 20-clip set
+  fell to remove ~85 phantom fly-on-flower episodes, with the real bee boxes untouched.
+- **Param:** `MAX_INSECT_FRAME_FRAC = 0.18` (raise toward 0.25 if large butterflies get clipped).
+
 ---
 
 ## 5. Measured effect of the upgrades
-Re-running all 20 test videos with the fixes vs the previous pass:
+Re-running all 20 test videos with the fixes vs the pre-fix baseline:
 
-- **Phantom flowers removed:** flower rows `69 → 63` across the set (e.g. `345137` lost
-  `flower_8`, `flower_9`, `flower_unk_1` — all 0-landing ghosts born from blink / ID churn).
-- **Real landings preserved:** `232 → 233` (smoothing did not destroy genuine landings).
-- **Qualitative:** flower boxes hold steady (no blink, no swap); insect boxes persist through
-  brief drop-outs and stop swinging on wing-flaps; species labels stop flickering.
+- **Phantom flowers removed:** flower rows `69 → 60` across the set (0-landing ghosts born from
+  blink / ID churn / whole-flower misdetection).
+- **Phantom insect landings removed:** the size gate drops the flower-sized "fly" episodes
+  (`~240 → ~155` landings on the set) while the real bee boxes and landings are preserved.
+- **Qualitative:** flower boxes hold steady (no blink, no swap); insect boxes are tight to the bee,
+  persist through brief drop-outs, and stop swinging on wing-flaps; species labels stop flickering;
+  no more flower-sized false boxes.
 
 ---
 
@@ -181,8 +198,12 @@ Post-processing cannot fix these — they need a better detector:
 | Tighter boxes on tiny insects | resolution / scale | train at imgsz ≥ 768 (already done in v2) | — |
 
 A **~4 h fine-tune** (≈10 epochs, warm-started from v2 `best.pt`, adding hard-negative flower
-crops as background) is the highest-leverage option if precision/recall must improve at the
-source. A full retrain is ~17 h. Everything in §4 is free and already applied.
+crops as background) is the obvious candidate if precision/recall must improve at the source.
+**This was attempted and abandoned:** the flower "negatives" sourced from the flower dataset
+contained real bees, so their empty labels taught the detector to *suppress* bees — recall fell
+`0.646 → ~0.52` within 3 epochs. It was killed and **v2 was kept**. A safe fine-tune would need
+*verified insect-free* negatives (manual curation), which is not a time-box-friendly task. A full
+retrain is ~17 h. Everything in §4 is free and already applied, and is what ships.
 
 ---
 
@@ -195,6 +216,7 @@ source. A full retrain is ~17 h. Everything in §4 is free and already applied.
 | `INSECT_HOLD_MAX` | video_detect.py | 72 | max frames to hold a lost insect box (~3 s) |
 | `INSECT_EDGE_FRAC` | video_detect.py | 0.02 | border margin that counts as "left the frame" |
 | `MIN_TRACK_DRAW` | video_detect.py | 3 | frames a track must exist before its box is drawn |
+| `MAX_INSECT_FRAME_FRAC` | video_detect.py | 0.18 | reject insect boxes bigger than this fraction of the frame (whole-flower FP) |
 | `MIN_LAND_S` | video_detect.py | 2.0 | dwell for a *real* landing |
 | `LAND_GRACE_S` | video_detect.py | 0.5 | bridge brief exits inside one landing |
 | `smooth` | visit_counter.py | 0.5 | EMA factor for flower boxes |
@@ -213,5 +235,7 @@ python -m src.cv_engine.video_detect \
     --honeybee-weights data/interim/cv_runs/honeybee_clf/best.pt \
     --save-video
 ```
-Outputs `<video>_landings.csv`, `<video>_flower_summary.csv`, `<video>_annotated.mp4`, plus
-`ALL_*.csv` aggregates, into `test_video_result/`.
+Outputs are grouped under `test_video_result/`:
+- `videos/<video>_annotated.mp4` — annotated video
+- `csv/<video>_landings.csv`, `csv/<video>_flower_summary.csv` — per-video tables
+- `csv/ALL_landings.csv`, `csv/ALL_flower_summary.csv` — merged team tables for the ML/LLM phase

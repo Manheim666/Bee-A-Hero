@@ -82,26 +82,29 @@ the honeybee subclassifier.** Only the best weights per detector ship (v2); v1 i
 
 | Detector | Ver | mAP@0.5 | mAP@0.5:0.95 | recall | key change |
 |---|---|---|---|---|---|
-| Flower (YOLO26m, 1 cls) | v1 | 0.776 | 0.506 | — | imgsz 640 |
-| **Flower** | **v2** ✅ | **0.815** | **0.537** | — | imgsz 768, longer schedule |
-| Insect (YOLO26m, 5 cls) | v1 | 0.618 | 0.403 | 0.565 | imgsz 640 |
-| **Insect** | **v2** ✅ | **0.683** | **0.476** | **0.623** | imgsz 768 + mixup/copy-paste |
+| Flower (YOLO26m, 1 cls) | v1 | 0.776 | 0.506 | 0.683 | imgsz 640 |
+| **Flower** | **v2** ✅ | **0.808** | **0.537** | **0.738** | imgsz 768, longer schedule |
+| Insect (YOLO26m, 5 cls) | v1 | 0.618 | 0.404 | 0.581 | imgsz 640 |
+| **Insect** | **v2** ✅ | **0.669** | **0.476** | **0.623** | imgsz 768 + mixup/copy-paste |
 
-**v1 → v2:** `imgsz` 640 → 768, **mixup + copy-paste** augmentation, longer training. Small,
-camouflaged fly/beetle/bug and low insect recall were the Act-1 weak point; insect **recall
-0.565 → 0.623** and **localization (mAP@0.5:0.95) +0.07** on both detectors, so boxes in the
-annotated videos are noticeably tighter.
+*(Best-checkpoint validation metrics, argmax mAP@0.5:0.95 — the `best.pt` that ships and the
+figure `notebooks/02_cv.ipynb` prints.)* **v1 → v2:** `imgsz` 640 → 768, **mixup + copy-paste**
+augmentation, longer training. Small, camouflaged fly/beetle/bug and low insect recall were the
+Act-1 weak point; insect **recall 0.581 → 0.623** and **localization (mAP@0.5:0.95) up on both**
+(+0.03 flower, +0.07 insect), so boxes in the annotated videos are noticeably tighter.
 
 **Honeybee subclassifier (v2-era).** Binary honeybee (*Apis*) vs. other-bee on `bee` crops.
 iNaturalist *Apis* data is thin (168 training images), so this is **provisional: F1 0.523**
 (recall ~0.75, precision ~0.38 → it over-calls honeybee). Treat `is_honeybee` and the honeybee
 share of `pollination_score` as approximate until more *Apis* data is added.
 
-**v3 landing results over the 20 test videos.** 233 landing episodes → **52 real landings**
-(dwell ≥ 2 s). By type: **honeybee 20 · fly 14 · beetle 10 · butterfly 4 · bee 3 · bug 1**.
-**69 flowers** tracked, total **pollination_score 1838**. Zero *inferred* (undetected-flower)
-landings — flower v2 recall caught every flower that saw a real landing. Combined tables in
-`test_video_result/` (`ALL_landings.csv`, `ALL_flower_summary.csv`) feed the ML + LLM stages.
+**Landing results over the 20 test videos** (476 s total, 24–60 fps, 1280×720 → 2732×1440;
+19 of 20 clips saw a real visit). 155 landing episodes → **31 real landings** (dwell ≥ 2 s).
+By type: **honeybee 21 · bee 4 · butterfly 3 · fly 2 · bug 1**. **60 flowers** tracked, total
+**pollination_score 1756.3**, with **2** *inferred* (undetected-flower) landings. These counts are
+after the tracking-robustness pass (cumulative type voting + box smoothing + `MAX_INSECT_FRAME_FRAC`
+size gate, no retraining). Combined tables in `test_video_result/csv/` (`ALL_landings.csv`,
+`ALL_flower_summary.csv`) feed the ML + LLM stages.
 
 ### 2.2 Run it in one snippet (weights ship in the repo — best model only)
 
@@ -122,13 +125,13 @@ ONE-SHOT TEST)** — it loads the best weights, prints both detectors' mAP, runs
 writes the CSVs. `full_notebooks/02_cv_full.ipynb` is a self-contained (no `import src`) version
 for a clean machine. Both use the **best model only**.
 
-For each video it writes, to `test_video_result/`:
-- `<video>_landings.csv` — one row per landing episode (enter/exit/dwell, type, `is_honeybee`,
+For each video it writes, grouped under `test_video_result/`:
+- `csv/<video>_landings.csv` — one row per landing episode (enter/exit/dwell, type, `is_honeybee`,
   `is_real_landing` ≥ 2 s, `flower_detected` detected|inferred, `pollination_weight`)
-- `<video>_flower_summary.csv` — per-flower counts, dwell, `pollination_score`
-- `<video>_annotated.mp4` — bbox video (flower + per-insect boxes/IDs/type + live counts)
+- `csv/<video>_flower_summary.csv` — per-flower counts, dwell, `pollination_score`
+- `videos/<video>_annotated.mp4` — bbox video (flower + per-insect boxes/IDs/type + live counts)
 
-and aggregates all videos into `ALL_landings.csv` + `ALL_flower_summary.csv` for the ML/LLM
+and aggregates all videos into `csv/ALL_landings.csv` + `csv/ALL_flower_summary.csv` for the ML/LLM
 stages. Useful knobs: `--conf 0.2` (insect sensitivity), `--flower-conf 0.15`, `--target-fps 24`.
 
 ## 3. ML stage — visits → fruit set → yield 🟡
@@ -193,7 +196,8 @@ src/
 └── llm_reporting/               # LLM slot (scaffolding)
 data/interim/cv_runs/{flower_det2,insect_multidet}_v2_yolo26m/weights/best.pt   # committed (best)
 data/interim/cv_runs/honeybee_clf/best.pt                                       # committed (best)
-test_video_result/ALL_landings.csv, ALL_flower_summary.csv                      # committed team CSVs
+test_video_result/csv/ALL_landings.csv, ALL_flower_summary.csv                  # committed team CSVs
+test_video_result/videos/<video>_annotated.mp4                                  # annotated videos (local)
 ```
 
 ## 6. Retraining the detectors (Act-2, on the server)

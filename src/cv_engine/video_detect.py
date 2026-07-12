@@ -18,12 +18,13 @@ Single real-time camera stream, resampled to a fixed **24 fps**. Per frame:
      A fly-off + return **is** a new landing. Honeybees are split from other bees when a
      subclassifier is supplied (honeybee weighted ~10x for pollination value).
 
-Outputs (to ``test_video_result/``):
-  * ``<video>_landings.csv``        -> one row / landing episode (enter, exit, duration,
+Outputs are grouped under ``test_video_result/``:
+  * ``csv/<video>_landings.csv``        -> one row / landing episode (enter, exit, duration,
         type, is_honeybee, is_real_landing, flower_detected, pollination_weight, ...)
-  * ``<video>_flower_summary.csv``  -> one row / flower (per-type counts, total/mean dwell,
+  * ``csv/<video>_flower_summary.csv``  -> one row / flower (per-type counts, total/mean dwell,
         pollination_score, species [NaN], timestamps [NaN for test videos])
-  * annotated ``<video>_annotated.mp4`` (flower boxes + per-insect boxes/IDs + live counts)
+  * ``csv/ALL_*.csv``                   -> merged tables across all videos (for the ML/LLM phase)
+  * ``videos/<video>_annotated.mp4``    -> flower boxes + per-insect boxes/IDs + live counts
 
 Setup (once):
     pip install -r src/cv_engine/requirements-cv.txt   # torch, ultralytics, opencv
@@ -61,6 +62,9 @@ INSECT_HOLD_MAX = 72      # keep drawing a lost insect box up to ~3s (24fps) so 
 INSECT_EDGE_FRAC = 0.02   # box within 2% of any frame border -> treat as left-frame, stop holding
 MIN_TRACK_DRAW = 3        # a track must be detected in >= this many frames before its box is drawn
                           #   -> a 1-2 frame false blip (e.g. flower momentarily read as bee) never shows
+MAX_INSECT_FRAME_FRAC = 0.18  # reject any insect box bigger than this fraction of the frame: a real
+                          #   insect is small; a flower-sized box (whole flower read as fly) is a
+                          #   false positive -> drop it from tracking, drawing and landings entirely
 UNK_FLOWER_RADIUS = 2.0   # * sqrt(insect_area): attribute an inferred landing to a flower within,
                           #   else mint a synthetic flower_unk_N at that spot
 SCORE_CAP_S = 30.0        # cap one landing's duration contribution to the pollination score
@@ -129,6 +133,8 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
     """
     from ultralytics import YOLO
     out_dir.mkdir(parents=True, exist_ok=True)
+    vid_dir, csv_dir = out_dir / "videos", out_dir / "csv"   # group outputs: videos/ and csv/
+    vid_dir.mkdir(exist_ok=True); csv_dir.mkdir(exist_ok=True)
     flower_model, insect_model = YOLO(flower_weights), YOLO(insect_weights)
     names = insect_model.names                                 # {cls_id: type}
     subclf = Classifier(honeybee_weights) if honeybee_weights else None  # bee -> honeybee/bee
@@ -186,7 +192,7 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
         t_s = round(fi * stride / in_fps, 2)
         flowers = ftracker.update(frame) if fi % flower_interval == 0 else ftracker.current()
         if fi == 0 and save_video:
-            writer = cv2.VideoWriter(str(out_dir / (vid_stem + "_annotated.mp4")),
+            writer = cv2.VideoWriter(str(vid_dir / (vid_stem + "_annotated.mp4")),
                                      cv2.VideoWriter_fourcc(*"mp4v"), out_fps, (W, H))
         drawn = []
         present = set()
@@ -197,6 +203,8 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
             cls = b.cls.int().cpu().tolist()
             confs = b.conf.cpu().numpy() if b.conf is not None else [0.0] * len(ids)
             for tid, box, c_id, cf in zip(ids, xyxy, cls, confs):
+                if (box[2] - box[0]) * (box[3] - box[1]) > MAX_INSECT_FRAME_FRAC * W * H:
+                    continue                                   # box too big to be an insect -> flower/bg FP
                 present.add(tid)
                 votes[tid][names[c_id]] += float(cf)           # confidence-weighted cumulative vote
                 lead = votes[tid].most_common(1)[0][0]         # current top type by cumulative weight
@@ -267,7 +275,7 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
     land_fields = ["video", "flower_id", "flower_species", "track_id", "insect_type",
                    "is_honeybee", "t_enter_s", "t_exit_s", "landing_s", "is_real_landing",
                    "flower_detected", "timestamp", "pollination_weight", "conf_mean"]
-    land_path = out_dir / (vid_stem + "_landings.csv")
+    land_path = csv_dir / (vid_stem + "_landings.csv")
     with open(land_path, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=land_fields)
         w.writeheader(); w.writerows(landings)
@@ -296,7 +304,7 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
     summ_fields = ["video", "flower_id", "flower_species", "n_landings", "n_real_landings",
                    *[f"n_{t}" for t in INSECT_TYPES], "total_landing_s", "mean_landing_s",
                    "pollination_score", "timestamp_first", "timestamp_last"]
-    summ_path = out_dir / (vid_stem + "_flower_summary.csv")
+    summ_path = csv_dir / (vid_stem + "_flower_summary.csv")
     with open(summ_path, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=summ_fields)
         w.writeheader(); w.writerows(summ.values())
@@ -314,11 +322,11 @@ def aggregate_csvs(out_dir: Path) -> dict:
       * ``ALL_flower_summary.csv``  -> video + per-flower rollup (counts, durations, score)
     """
     import glob
-    out_dir = Path(out_dir)
+    csv_dir = Path(out_dir) / "csv"                          # per-video + ALL_*.csv live here
     outs = {}
     for kind, key in (("landings", "_landings.csv"), ("flower_summary", "_flower_summary.csv")):
         rows, fields = [], []
-        for f in sorted(glob.glob(str(out_dir / f"*{key}"))):
+        for f in sorted(glob.glob(str(csv_dir / f"*{key}"))):
             if Path(f).name.startswith("ALL_"):
                 continue
             for r in csv.DictReader(open(f)):
@@ -326,7 +334,7 @@ def aggregate_csvs(out_dir: Path) -> dict:
                     if k not in fields:
                         fields.append(k)
                 rows.append(r)
-        dst = out_dir / f"ALL_{kind}.csv"
+        dst = csv_dir / f"ALL_{kind}.csv"
         with open(dst, "w", newline="") as fh:
             w = csv.DictWriter(fh, fieldnames=fields, restval=0)
             w.writeheader(); w.writerows(rows)
