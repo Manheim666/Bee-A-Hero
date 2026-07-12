@@ -93,36 +93,53 @@ class FlowerTracker:
 
     Handles dynamic video (moving camera/flowers): each frame the flowers are
     re-detected and matched to existing tracks by IoU so ``flower_1`` stays the
-    same flower as it moves. A short ``max_missed`` grace keeps IDs through brief
-    misses. ``seen`` records every flower ID ever assigned (for the final report).
+    same flower as it moves. Robustness (no retraining needed):
+
+      * **Global one-to-one matching** -- every (track, detection) pair is ranked by
+        IoU and the strongest pairs are assigned first, so two neighbouring flowers
+        cannot swap boxes (stops the multi-flower ID mix-up).
+      * **EMA box smoothing** (``smooth``) -- the matched box is blended into the
+        track instead of replaced, damping per-frame jitter (a running box average).
+      * **Presence hold** (``hold``) -- a flower's last-known box keeps being drawn
+        through a few missed detections, so the box no longer blinks off/on.
+
+    A longer ``max_missed`` grace keeps the *ID* alive for re-association even after
+    the box stops being drawn. ``seen`` records every flower ID ever assigned.
     """
 
-    def __init__(self, model, conf, dilate=0.15, iou_thr=0.3, max_missed=30):
+    def __init__(self, model, conf, dilate=0.15, iou_thr=0.3, max_missed=45,
+                 smooth=0.5, hold=6):
         self.model, self.conf, self.dilate = model, conf, dilate
         self.iou_thr, self.max_missed = iou_thr, max_missed
+        self.smooth, self.hold = smooth, hold
         self.tracks: dict[str, dict] = {}
         self.next_id = 1
         self.seen: set[str] = set()
 
     def update(self, frame):
         dets = _detect_flowers_raw(self.model, frame, self.conf, self.dilate)
-        used = set()
-        for fid in list(self.tracks):
-            best, bj = self.iou_thr, -1
+        # rank every (track, det) IoU pair, assign strongest first -> global 1:1 match
+        pairs = []
+        for fid in self.tracks:
             for j, d in enumerate(dets):
-                if j in used:
-                    continue
                 iou = _iou(self.tracks[fid]["box"], d)
-                if iou >= best:
-                    best, bj = iou, j
-            if bj >= 0:
-                self.tracks[fid] = {"box": dets[bj], "missed": 0}
-                used.add(bj)
-            else:
+                if iou >= self.iou_thr:
+                    pairs.append((iou, fid, j))
+        pairs.sort(key=lambda p: p[0], reverse=True)
+        matched, used = set(), set()
+        for iou, fid, j in pairs:
+            if fid in matched or j in used:
+                continue
+            prev = self.tracks[fid]["box"]                 # EMA-smooth the box (damp jitter)
+            sm = tuple(self.smooth * p + (1 - self.smooth) * n for p, n in zip(prev, dets[j]))
+            self.tracks[fid] = {"box": sm, "missed": 0}
+            matched.add(fid); used.add(j)
+        for fid in list(self.tracks):                      # unmatched track: hold last box, age it
+            if fid not in matched:
                 self.tracks[fid]["missed"] += 1
                 if self.tracks[fid]["missed"] > self.max_missed:
                     del self.tracks[fid]
-        for j, d in enumerate(dets):
+        for j, d in enumerate(dets):                       # unmatched det: mint a new flower
             if j not in used:
                 fid = f"flower_{self.next_id}"; self.next_id += 1
                 self.tracks[fid] = {"box": d, "missed": 0}
@@ -130,8 +147,8 @@ class FlowerTracker:
         return self.current()
 
     def current(self):
-        """Active flower boxes without re-detecting (reused between detect frames)."""
-        return [(fid, t["box"]) for fid, t in self.tracks.items() if t["missed"] == 0]
+        """Active flower boxes (last known), held through <= ``hold`` misses to stop blink."""
+        return [(fid, t["box"]) for fid, t in self.tracks.items() if t["missed"] <= self.hold]
 
 
 POLLINATOR_TYPES = {"bee", "butterfly", "wasp", "fly"}  # highlighted + rolled up in CSV
