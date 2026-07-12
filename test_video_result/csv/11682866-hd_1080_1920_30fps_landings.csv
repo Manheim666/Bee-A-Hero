@@ -1,0 +1,5 @@
+video,flower_id,flower_species,track_id,insect_type,is_honeybee,t_enter_s,t_exit_s,landing_s,is_real_landing,flower_detected,timestamp,pollination_weight,conf_mean
+11682866-hd_1080_1920_30fps,flower_3,,17,bee,False,3.74,6.04,2.3,1,detected,,1.0,0.529
+11682866-hd_1080_1920_30fps,flower_3,,45,honeybee,True,15.65,15.85,0.2,0,detected,,10.0,0.334
+11682866-hd_1080_1920_30fps,flower_3,,47,honeybee,True,17.02,17.25,0.23,0,detected,,10.0,0.515
+11682866-hd_1080_1920_30fps,flower_3,,48,honeybee,True,17.32,17.32,0.0,0,detected,,10.0,0.323
