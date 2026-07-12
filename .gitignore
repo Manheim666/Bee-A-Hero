@@ -76,4 +76,3 @@ data/raw/flower visits/
 data/raw/flowerDetecter-v2.v1i.coco/
 data/raw/*.v1i.coco/
 data/raw/DATASETS_TO_DOWNLOAD.md
-models/yield_report.json
