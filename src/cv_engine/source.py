@@ -35,14 +35,28 @@ class Source:
     reason: str = ""                # human-readable explanation (for logs / the web page)
 
 
-def _parse_source_line(line: str):
-    """Map one ``sources.txt`` line to an OpenCV source: int index or the raw string."""
+SIDES = ("east", "west", "north", "south")  # a tree is watched from 4 sides
+
+
+def _parse_source_line(line: str, idx: int) -> tuple[str, object]:
+    """Map one ``sources.txt`` line to ``(side, src)``.
+
+    A line may carry a compass side: ``east=rtsp://cam/stream`` (per the 4-cameras-per-tree
+    layout). A bare line (``0`` / ``rtsp://…``) gets an auto side (``cam{idx}``). ``src`` is an
+    int device index when the value is all digits, else the raw string (URL / path).
+    """
     line = line.strip()
-    return int(line) if line.isdigit() else line
+    if "=" in line:
+        side, _, val = line.partition("=")
+        side, val = side.strip().lower(), val.strip()
+    else:
+        side, val = f"cam{idx}", line
+    src = int(val) if val.isdigit() else val
+    return side, src
 
 
-def read_camera_sources(camera_dir: Path = None) -> list:
-    """Return the raw source list from ``camera/sources.txt`` (no probing). Empty if absent."""
+def read_camera_sources(camera_dir: Path = None) -> list[tuple[str, object]]:
+    """Return ``[(side, src), ...]`` from ``camera/sources.txt`` (no probing). Empty if absent."""
     camera_dir = Path(camera_dir) if camera_dir is not None else C.CAMERA_DIR
     f = camera_dir / "sources.txt"
     if not f.exists():
@@ -51,7 +65,7 @@ def read_camera_sources(camera_dir: Path = None) -> list:
     for raw in f.read_text().splitlines():
         s = raw.strip()
         if s and not s.startswith("#"):
-            out.append(_parse_source_line(s))
+            out.append(_parse_source_line(s, len(out)))
     return out
 
 
@@ -87,12 +101,13 @@ def resolve_source(camera_dir: Path = None, video_dir: Path = None,
     trust the list without touching hardware (faster, e.g. for a status page that only reports
     intent). If cameras are listed but none open, we fall back to video and say so in ``reason``.
     """
-    listed = read_camera_sources(camera_dir)
+    listed = read_camera_sources(camera_dir)   # [(side, src), ...]
     if listed:
-        active = [s for s in listed if probe(s)] if probe_cameras else list(listed)
+        active = [(side, s) for side, s in listed if probe(s)] if probe_cameras else list(listed)
         if active:
+            sides = ", ".join(side for side, _ in active)
             return Source("camera", active,
-                          f"{len(active)}/{len(listed)} camera source(s) active")
+                          f"{len(active)}/{len(listed)} camera(s) active ({sides})")
         # listed but unreachable -> fall through to video
         reason_cam = f"{len(listed)} camera source(s) listed but none reachable; "
     else:

@@ -22,7 +22,8 @@ from src import config as C
 from src.cv_engine.source import resolve_source
 
 app = Flask(__name__)
-CSV_DIR = C.REPO_ROOT / "test_video_result" / "csv"
+CAM_CSV = C.CAMERA_DIR / "csv"                       # live camera lane (data/camera/csv/)
+BATCH_CSV = C.REPO_ROOT / "test_video_result" / "csv"  # our test-video checkup lane
 REFRESH_S = 5  # page auto-refresh cadence
 
 
@@ -74,13 +75,13 @@ _PAGE = """<!doctype html>
 def index():
     # probe_cameras=False: the status page reports intent without blocking on hardware
     src = resolve_source(probe_cameras=False)
-    daily_h, daily = _read_csv(CSV_DIR / "daily_flower_counts.csv")
-    live_h, live = _read_csv(CSV_DIR / "live_landings.csv", limit=20)
-    summ_h, summ = _read_csv(CSV_DIR / "ALL_flower_summary.csv")
+    daily_h, daily = _read_csv(CAM_CSV / "daily_flower_counts.csv")
+    live_h, live = _read_csv(CAM_CSV / "live_landings.csv", limit=20)
+    summ_h, summ = _read_csv(BATCH_CSV / "ALL_flower_summary.csv")
     tables = [
-        ("Per-flower daily counts (live)", daily_h, daily),
-        ("Recent landings (live, last 20)", live_h, list(reversed(live))),
-        ("Test-video per-flower summary (batch)", summ_h, summ),
+        ("Per-flower daily counts — live cameras (data/camera/csv)", daily_h, daily),
+        ("Recent landings — live cameras (last 20)", live_h, list(reversed(live))),
+        ("Test-video per-flower summary (our checkup)", summ_h, summ),
     ]
     return render_template_string(_PAGE, src=src, tables=tables, refresh=REFRESH_S)
 
