@@ -1,0 +1,2842 @@
+{
+  "report_version": "1.0",
+  "crop_note": "These test videos are generic CV-pipeline test footage (Pexels stock videos), NOT verified pomegranate or cucumber orchard recordings. cv_facts are real CV measurements; ml_estimate assumes a crop and must be treated as a hypothesis.",
+  "pollinator_classification_note": "honeybee/bee/butterfly/fly are classified as 'pollinator' and beetle/bug as 'non_pollinator' per this project's own convention (SPECIES_WEIGHT >= 0.5 threshold), not a universally cited biological classification.",
+  "source": "test_video_result/ALL_landings.csv",
+  "flower_count": 26,
+  "flowers": [
+    {
+      "cv_facts": {
+        "video": "108220-680177956_medium",
+        "flower_id": "flower_1",
+        "n_landings": 2,
+        "n_real_landings": 1,
+        "pollinator_visits": 1,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 1,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 19.69,
+        "mean_landing_s": 19.69,
+        "pollination_score": 19.69,
+        "video_observation_span_s": 19.69,
+        "dominant_pollinators": [
+          "bee"
+        ],
+        "dominant_pollinator_visits": 1,
+        "landings_detail": [
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.75,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 19.69,
+            "is_real_landing": true,
+            "pollination_weight": 1.0,
+            "score_contribution": 19.69
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 19.69,
+        "fruit_set_probability": 0.4764,
+        "yield_kg_per_flower_estimate": 0.1429,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "11682866-hd_1080_1920_30fps",
+        "flower_id": "flower_1",
+        "n_landings": 1,
+        "n_real_landings": 0,
+        "pollinator_visits": 0,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 0.0,
+        "mean_landing_s": 0.0,
+        "pollination_score": 0.0,
+        "video_observation_span_s": 0.0,
+        "dominant_pollinators": [],
+        "dominant_pollinator_visits": 0,
+        "landings_detail": [
+          {
+            "insect_type": "bug",
+            "is_pollinator": false,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.2,
+            "score_contribution": 0.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 0.0,
+        "fruit_set_probability": 0.4468,
+        "yield_kg_per_flower_estimate": 0.134,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "11682866-hd_1080_1920_30fps",
+        "flower_id": "flower_2",
+        "n_landings": 5,
+        "n_real_landings": 0,
+        "pollinator_visits": 0,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 0.0,
+        "mean_landing_s": 0.0,
+        "pollination_score": 0.0,
+        "video_observation_span_s": 0.0,
+        "dominant_pollinators": [],
+        "dominant_pollinator_visits": 0,
+        "landings_detail": [
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.03,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.03,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.23,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 0.0,
+        "fruit_set_probability": 0.4468,
+        "yield_kg_per_flower_estimate": 0.134,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "11682866-hd_1080_1920_30fps",
+        "flower_id": "flower_3",
+        "n_landings": 7,
+        "n_real_landings": 1,
+        "pollinator_visits": 1,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 1,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 17.15,
+        "mean_landing_s": 17.15,
+        "pollination_score": 8.57,
+        "video_observation_span_s": 17.15,
+        "dominant_pollinators": [
+          "fly"
+        ],
+        "dominant_pollinator_visits": 1,
+        "landings_detail": [
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.5,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.33,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.03,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 17.15,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 8.575
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 8.57,
+        "fruit_set_probability": 0.4602,
+        "yield_kg_per_flower_estimate": 0.138,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "117782-713036137_medium",
+        "flower_id": "flower_1",
+        "n_landings": 4,
+        "n_real_landings": 1,
+        "pollinator_visits": 1,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 1,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 10.64,
+        "mean_landing_s": 10.64,
+        "pollination_score": 5.32,
+        "video_observation_span_s": 10.64,
+        "dominant_pollinators": [
+          "fly"
+        ],
+        "dominant_pollinator_visits": 1,
+        "landings_detail": [
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.4,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.2,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 10.64,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 5.32
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 5.32,
+        "fruit_set_probability": 0.4552,
+        "yield_kg_per_flower_estimate": 0.1366,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "128253-740907045_medium",
+        "flower_id": "flower_1",
+        "n_landings": 7,
+        "n_real_landings": 1,
+        "pollinator_visits": 1,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 1,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 13.63,
+        "mean_landing_s": 13.63,
+        "pollination_score": 13.63,
+        "video_observation_span_s": 13.63,
+        "dominant_pollinators": [
+          "bee"
+        ],
+        "dominant_pollinator_visits": 1,
+        "landings_detail": [
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.7,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.74,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.4,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 1.17,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.14,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 13.63,
+            "is_real_landing": true,
+            "pollination_weight": 1.0,
+            "score_contribution": 13.63
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 13.63,
+        "fruit_set_probability": 0.4677,
+        "yield_kg_per_flower_estimate": 0.1403,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "178730-860519974_medium",
+        "flower_id": "flower_1",
+        "n_landings": 15,
+        "n_real_landings": 2,
+        "pollinator_visits": 1,
+        "non_pollinator_visits": 1,
+        "n_honeybee": 1,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 1,
+        "n_bug": 0,
+        "total_landing_s": 11.15,
+        "mean_landing_s": 5.58,
+        "pollination_score": 26.19,
+        "video_observation_span_s": 12.58,
+        "dominant_pollinators": [
+          "honeybee",
+          "beetle"
+        ],
+        "dominant_pollinator_visits": 1,
+        "landings_detail": [
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.6,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.87,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 1.2,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.26,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.24,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.07,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 2.17,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 21.7
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.73,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 1.27,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.07,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 8.98,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 4.49
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.43,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.2,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 26.19,
+        "fruit_set_probability": 0.4854,
+        "yield_kg_per_flower_estimate": 0.1456,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "205538-927347740_medium",
+        "flower_id": "flower_1",
+        "n_landings": 2,
+        "n_real_landings": 1,
+        "pollinator_visits": 1,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 1,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 14.21,
+        "mean_landing_s": 14.21,
+        "pollination_score": 14.21,
+        "video_observation_span_s": 14.21,
+        "dominant_pollinators": [
+          "bee"
+        ],
+        "dominant_pollinator_visits": 1,
+        "landings_detail": [
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 14.21,
+            "is_real_landing": true,
+            "pollination_weight": 1.0,
+            "score_contribution": 14.21
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 14.21,
+        "fruit_set_probability": 0.4685,
+        "yield_kg_per_flower_estimate": 0.1406,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "205538-927347740_medium",
+        "flower_id": "flower_unk_1",
+        "n_landings": 1,
+        "n_real_landings": 0,
+        "pollinator_visits": 0,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 0.0,
+        "mean_landing_s": 0.0,
+        "pollination_score": 0.0,
+        "video_observation_span_s": 0.0,
+        "dominant_pollinators": [],
+        "dominant_pollinator_visits": 0,
+        "landings_detail": [
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 0.0,
+        "fruit_set_probability": 0.4468,
+        "yield_kg_per_flower_estimate": 0.134,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "259555_medium",
+        "flower_id": "flower_1",
+        "n_landings": 4,
+        "n_real_landings": 1,
+        "pollinator_visits": 1,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 1,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 30.46,
+        "mean_landing_s": 30.46,
+        "pollination_score": 300.0,
+        "video_observation_span_s": 30.46,
+        "dominant_pollinators": [
+          "honeybee"
+        ],
+        "dominant_pollinator_visits": 1,
+        "landings_detail": [
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 30.46,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 300.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 300.0,
+        "fruit_set_probability": 0.656,
+        "yield_kg_per_flower_estimate": 0.1968,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "260143_medium",
+        "flower_id": "flower_1",
+        "n_landings": 12,
+        "n_real_landings": 3,
+        "pollinator_visits": 3,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 3,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 18.97,
+        "mean_landing_s": 6.32,
+        "pollination_score": 189.7,
+        "video_observation_span_s": 21.5,
+        "dominant_pollinators": [
+          "honeybee"
+        ],
+        "dominant_pollinator_visits": 3,
+        "landings_detail": [
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 7.21,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 72.1
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.21,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.96,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.12,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 7.09,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 70.9
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.96,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 1.54,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.33,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.21,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 4.67,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 46.7
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 189.7,
+        "fruit_set_probability": 0.6202,
+        "yield_kg_per_flower_estimate": 0.186,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "27355-363287688_medium",
+        "flower_id": "flower_1",
+        "n_landings": 2,
+        "n_real_landings": 0,
+        "pollinator_visits": 0,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 0.0,
+        "mean_landing_s": 0.0,
+        "pollination_score": 0.0,
+        "video_observation_span_s": 0.0,
+        "dominant_pollinators": [],
+        "dominant_pollinator_visits": 0,
+        "landings_detail": [
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.53,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.43,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 0.0,
+        "fruit_set_probability": 0.4468,
+        "yield_kg_per_flower_estimate": 0.134,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "27355-363287688_medium",
+        "flower_id": "flower_2",
+        "n_landings": 3,
+        "n_real_landings": 2,
+        "pollinator_visits": 2,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 2,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 5.7,
+        "mean_landing_s": 2.85,
+        "pollination_score": 2.85,
+        "video_observation_span_s": 6.97,
+        "dominant_pollinators": [
+          "fly"
+        ],
+        "dominant_pollinator_visits": 2,
+        "landings_detail": [
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 3.43,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 1.715
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 2.27,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 1.135
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 2.85,
+        "fruit_set_probability": 0.4513,
+        "yield_kg_per_flower_estimate": 0.1354,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "273585_medium",
+        "flower_id": "flower_1",
+        "n_landings": 6,
+        "n_real_landings": 3,
+        "pollinator_visits": 3,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 3,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 7.32,
+        "mean_landing_s": 2.44,
+        "pollination_score": 73.2,
+        "video_observation_span_s": 8.04,
+        "dominant_pollinators": [
+          "honeybee"
+        ],
+        "dominant_pollinator_visits": 3,
+        "landings_detail": [
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 1.6,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.2,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 2.36,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 23.6
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 2.48,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 24.8
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 2.48,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 24.8
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 73.2,
+        "fruit_set_probability": 0.5399,
+        "yield_kg_per_flower_estimate": 0.162,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "282422_medium",
+        "flower_id": "flower_1",
+        "n_landings": 5,
+        "n_real_landings": 3,
+        "pollinator_visits": 3,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 3,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 57.96,
+        "mean_landing_s": 19.32,
+        "pollination_score": 472.0,
+        "video_observation_span_s": 49.88,
+        "dominant_pollinators": [
+          "honeybee"
+        ],
+        "dominant_pollinator_visits": 3,
+        "landings_detail": [
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 8.08,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 80.8
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 9.12,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 91.2
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 1.6,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 40.76,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 300.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 472.0,
+        "fruit_set_probability": 0.6787,
+        "yield_kg_per_flower_estimate": 0.2036,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "286554_medium",
+        "flower_id": "flower_2",
+        "n_landings": 7,
+        "n_real_landings": 1,
+        "pollinator_visits": 1,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 1,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 9.88,
+        "mean_landing_s": 9.88,
+        "pollination_score": 98.8,
+        "video_observation_span_s": 9.88,
+        "dominant_pollinators": [
+          "honeybee"
+        ],
+        "dominant_pollinator_visits": 1,
+        "landings_detail": [
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 1.07,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 9.88,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 98.8
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 98.8,
+        "fruit_set_probability": 0.5631,
+        "yield_kg_per_flower_estimate": 0.1689,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "286554_medium",
+        "flower_id": "flower_unk_1",
+        "n_landings": 1,
+        "n_real_landings": 0,
+        "pollinator_visits": 0,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 0.0,
+        "mean_landing_s": 0.0,
+        "pollination_score": 0.0,
+        "video_observation_span_s": 0.0,
+        "dominant_pollinators": [],
+        "dominant_pollinator_visits": 0,
+        "landings_detail": [
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 0.0,
+        "fruit_set_probability": 0.4468,
+        "yield_kg_per_flower_estimate": 0.134,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "294708_medium",
+        "flower_id": "flower_1",
+        "n_landings": 2,
+        "n_real_landings": 1,
+        "pollinator_visits": 1,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 1,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 5.36,
+        "mean_landing_s": 5.36,
+        "pollination_score": 53.6,
+        "video_observation_span_s": 5.36,
+        "dominant_pollinators": [
+          "honeybee"
+        ],
+        "dominant_pollinator_visits": 1,
+        "landings_detail": [
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 1.04,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 5.36,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 53.6
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 53.6,
+        "fruit_set_probability": 0.5192,
+        "yield_kg_per_flower_estimate": 0.1558,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "30470-387715996_medium",
+        "flower_id": "flower_1",
+        "n_landings": 2,
+        "n_real_landings": 1,
+        "pollinator_visits": 1,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 1,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 2.6,
+        "mean_landing_s": 2.6,
+        "pollination_score": 26.0,
+        "video_observation_span_s": 2.6,
+        "dominant_pollinators": [
+          "honeybee"
+        ],
+        "dominant_pollinator_visits": 1,
+        "landings_detail": [
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 2.6,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 26.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 1.2,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 26.0,
+        "fruit_set_probability": 0.4851,
+        "yield_kg_per_flower_estimate": 0.1455,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "30470-387715996_medium",
+        "flower_id": "flower_unk_1",
+        "n_landings": 1,
+        "n_real_landings": 0,
+        "pollinator_visits": 0,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 0.0,
+        "mean_landing_s": 0.0,
+        "pollination_score": 0.0,
+        "video_observation_span_s": 0.0,
+        "dominant_pollinators": [],
+        "dominant_pollinator_visits": 0,
+        "landings_detail": [
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 0.0,
+        "fruit_set_probability": 0.4468,
+        "yield_kg_per_flower_estimate": 0.134,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "345137_medium",
+        "flower_id": "flower_1",
+        "n_landings": 19,
+        "n_real_landings": 4,
+        "pollinator_visits": 3,
+        "non_pollinator_visits": 1,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 3,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 1,
+        "total_landing_s": 23.71,
+        "mean_landing_s": 5.93,
+        "pollination_score": 32.3,
+        "video_observation_span_s": 27.99,
+        "dominant_pollinators": [
+          "butterfly"
+        ],
+        "dominant_pollinator_visits": 3,
+        "landings_detail": [
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 2.3,
+            "is_real_landing": true,
+            "pollination_weight": 2.0,
+            "score_contribution": 4.6
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 1.77,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 1.0,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 0.06,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 0.07,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 0.07,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 9.31,
+            "is_real_landing": true,
+            "pollination_weight": 2.0,
+            "score_contribution": 18.62
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 3.7,
+            "is_real_landing": true,
+            "pollination_weight": 2.0,
+            "score_contribution": 7.4
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 1.97,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 2.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.03,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bug",
+            "is_pollinator": false,
+            "landing_s": 8.4,
+            "is_real_landing": true,
+            "pollination_weight": 0.2,
+            "score_contribution": 1.68
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 32.3,
+        "fruit_set_probability": 0.4934,
+        "yield_kg_per_flower_estimate": 0.148,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "3915-175665032_medium",
+        "flower_id": "flower_1",
+        "n_landings": 56,
+        "n_real_landings": 10,
+        "pollinator_visits": 3,
+        "non_pollinator_visits": 7,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 1,
+        "n_fly": 2,
+        "n_beetle": 7,
+        "n_bug": 0,
+        "total_landing_s": 65.47,
+        "mean_landing_s": 6.55,
+        "pollination_score": 35.99,
+        "video_observation_span_s": 82.21,
+        "dominant_pollinators": [
+          "beetle"
+        ],
+        "dominant_pollinator_visits": 7,
+        "landings_detail": [
+          {
+            "insect_type": "butterfly",
+            "is_pollinator": true,
+            "landing_s": 2.17,
+            "is_real_landing": true,
+            "pollination_weight": 2.0,
+            "score_contribution": 4.34
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.46,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.09,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.96,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.16,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 7.96,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 3.98
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.08,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 1.46,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.2,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.21,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.08,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.08,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.33,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bug",
+            "is_pollinator": false,
+            "landing_s": 0.08,
+            "is_real_landing": false,
+            "pollination_weight": 0.2,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 1.75,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 14.84,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 7.42
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.38,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.16,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.21,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bug",
+            "is_pollinator": false,
+            "landing_s": 0.17,
+            "is_real_landing": false,
+            "pollination_weight": 0.2,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 5.34,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 2.67
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.38,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.08,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 1.83,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.33,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "bug",
+            "is_pollinator": false,
+            "landing_s": 0.09,
+            "is_real_landing": false,
+            "pollination_weight": 0.2,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 6.5,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 3.25
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.08,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.09,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.79,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.08,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.17,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 12.95,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 6.475
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.08,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.12,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 3.04,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 1.52
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.13,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.5,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 2.59,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 1.295
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.13,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.71,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 6.75,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 3.375
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 1.5,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 3.33,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 1.665
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 35.99,
+        "fruit_set_probability": 0.4982,
+        "yield_kg_per_flower_estimate": 0.1494,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "3915-175665032_medium",
+        "flower_id": "flower_unk_1",
+        "n_landings": 1,
+        "n_real_landings": 0,
+        "pollinator_visits": 0,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 0.0,
+        "mean_landing_s": 0.0,
+        "pollination_score": 0.0,
+        "video_observation_span_s": 0.0,
+        "dominant_pollinators": [],
+        "dominant_pollinator_visits": 0,
+        "landings_detail": [
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.09,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 0.0,
+        "fruit_set_probability": 0.4468,
+        "yield_kg_per_flower_estimate": 0.134,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "42469-431738775_medium",
+        "flower_id": "flower_1",
+        "n_landings": 9,
+        "n_real_landings": 2,
+        "pollinator_visits": 2,
+        "non_pollinator_visits": 0,
+        "n_honeybee": 0,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 2,
+        "n_beetle": 0,
+        "n_bug": 0,
+        "total_landing_s": 15.67,
+        "mean_landing_s": 7.84,
+        "pollination_score": 7.84,
+        "video_observation_span_s": 11.27,
+        "dominant_pollinators": [
+          "fly"
+        ],
+        "dominant_pollinator_visits": 2,
+        "landings_detail": [
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.74,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.87,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.53,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.3,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 10.13,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 5.065
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.17,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 5.54,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 2.77
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 7.84,
+        "fruit_set_probability": 0.4591,
+        "yield_kg_per_flower_estimate": 0.1377,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "80304-572395710_medium",
+        "flower_id": "flower_1",
+        "n_landings": 50,
+        "n_real_landings": 11,
+        "pollinator_visits": 10,
+        "non_pollinator_visits": 1,
+        "n_honeybee": 4,
+        "n_bee": 0,
+        "n_butterfly": 0,
+        "n_fly": 6,
+        "n_beetle": 1,
+        "n_bug": 0,
+        "total_landing_s": 54.6,
+        "mean_landing_s": 4.96,
+        "pollination_score": 192.98,
+        "video_observation_span_s": 39.64,
+        "dominant_pollinators": [
+          "fly"
+        ],
+        "dominant_pollinator_visits": 6,
+        "landings_detail": [
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 1.48,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 1.64,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.48,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 1.24,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.44,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.28,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 4.32,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 43.2
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 1.2,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 1.32,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.6,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 1.24,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.6,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 7.92,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 3.96
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 1.12,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.72,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.44,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.04,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 1.4,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.08,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 3.08,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 30.8
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 3.24,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 32.4
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 6.8,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 68.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 4.84,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 2.42
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.2,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 4.36,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 2.18
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.48,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.88,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 9.36,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 4.68
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 2.32,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 1.16
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.12,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 2.56,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 1.28
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.92,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.68,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.12,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 1.68,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.24,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 0.92,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "fly",
+            "is_pollinator": true,
+            "landing_s": 1.84,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 5.8,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 2.9
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 0.48,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.24,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 192.98,
+        "fruit_set_probability": 0.6217,
+        "yield_kg_per_flower_estimate": 0.1865,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    },
+    {
+      "cv_facts": {
+        "video": "90975-628462646_medium",
+        "flower_id": "flower_1",
+        "n_landings": 8,
+        "n_real_landings": 3,
+        "pollinator_visits": 2,
+        "non_pollinator_visits": 1,
+        "n_honeybee": 1,
+        "n_bee": 1,
+        "n_butterfly": 0,
+        "n_fly": 0,
+        "n_beetle": 1,
+        "n_bug": 0,
+        "total_landing_s": 16.56,
+        "mean_landing_s": 5.52,
+        "pollination_score": 87.73,
+        "video_observation_span_s": 9.77,
+        "dominant_pollinators": [
+          "honeybee",
+          "bee",
+          "beetle"
+        ],
+        "dominant_pollinator_visits": 1,
+        "landings_detail": [
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 2.53,
+            "is_real_landing": true,
+            "pollination_weight": 1.0,
+            "score_contribution": 2.53
+          },
+          {
+            "insect_type": "bee",
+            "is_pollinator": true,
+            "landing_s": 0.0,
+            "is_real_landing": false,
+            "pollination_weight": 1.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 8.23,
+            "is_real_landing": true,
+            "pollination_weight": 10.0,
+            "score_contribution": 82.3
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 5.8,
+            "is_real_landing": true,
+            "pollination_weight": 0.5,
+            "score_contribution": 2.9
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.8,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.73,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "beetle",
+            "is_pollinator": false,
+            "landing_s": 1.6,
+            "is_real_landing": false,
+            "pollination_weight": 0.5,
+            "score_contribution": 0.0
+          },
+          {
+            "insect_type": "honeybee",
+            "is_pollinator": true,
+            "landing_s": 0.53,
+            "is_real_landing": false,
+            "pollination_weight": 10.0,
+            "score_contribution": 0.0
+          }
+        ]
+      },
+      "ml_estimate": {
+        "assumed_crop_unverified": true,
+        "assumed_crop": "pomegranate",
+        "V": 87.73,
+        "fruit_set_probability": 0.5536,
+        "yield_kg_per_flower_estimate": 0.1661,
+        "is_measured": false,
+        "curve_source": "live curve_fit on dataset_training_v11.csv, assuming pomegranate",
+        "F0_fit": 0.4468,
+        "Fmax_fit": 0.6894,
+        "k_fit": 0.00661
+      }
+    }
+  ]
+}
