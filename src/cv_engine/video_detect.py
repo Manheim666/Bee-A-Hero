@@ -39,6 +39,7 @@ import argparse
 import csv
 import colorsys
 from collections import Counter, defaultdict
+from datetime import datetime
 from pathlib import Path
 
 import cv2
@@ -123,7 +124,7 @@ def _attribute_flower(c, area, flowers, unk_reg, next_unk):
 def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
                      conf=0.25, flower_conf=0.15, save_video=False,
                      flower_interval=5, target_fps=TARGET_FPS,
-                     honeybee_weights="") -> dict:
+                     honeybee_weights="", on_landing=None, live=False) -> dict:
     """Detect+track insects on flowers and emit landing-level pollination data.
 
     A **landing episode** = a contiguous span where a tracked insect is either inside a
@@ -173,15 +174,21 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
         real = int(landing_s >= MIN_LAND_S)
         if real:
             flower_count[ep["flower"]] += 1
-        landings.append({
+        # live cameras record the wall-clock exit time so daily counts can bucket by date;
+        # test videos leave it blank (they have no real calendar time).
+        ts = datetime.now().isoformat(timespec="seconds") if live else ""
+        row = {
             "video": vid_stem, "flower_id": ep["flower"], "flower_species": "",
             "track_id": tid, "insect_type": typ, "is_honeybee": is_hb,
             "t_enter_s": round(ep["enter_t"], 2), "t_exit_s": round(ep["last_t"], 2),
             "landing_s": landing_s, "is_real_landing": real,
-            "flower_detected": ep["detected"], "timestamp": "",
+            "flower_detected": ep["detected"], "timestamp": ts,
             "pollination_weight": SPECIES_WEIGHT.get(typ, DEFAULT_WEIGHT),
             "conf_mean": round(ep["conf_sum"] / max(1, ep["conf_n"]), 3),
-        })
+        }
+        landings.append(row)
+        if on_landing is not None:               # live sink: emit each landing as it completes
+            on_landing(row)
         st[tid]["ep"] = None
 
     stream = insect_model.track(source=video, stream=True, tracker="botsort.yaml",
