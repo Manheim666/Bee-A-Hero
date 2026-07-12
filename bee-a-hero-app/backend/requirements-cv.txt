@@ -1,0 +1,7 @@
+# Optional real-detector deps for the backend (light — no torch/ultralytics).
+# Install to run the ONNX detector; without them the detector falls back to the mock.
+#   pip install -r requirements-cv.txt
+# Needs the exported models in ../../models/onnx/ (python -m src.cv_engine.export_onnx at repo root).
+onnxruntime>=1.17
+opencv-python-headless>=4.9
+numpy>=1.26
