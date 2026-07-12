@@ -32,8 +32,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.ml_models import bee_hero_dataset as ds
-from src.ml_models.bee_hero_dataset import CROPS
+from src.ml_models import visit_dataset as ds
+from src.ml_models.visit_dataset import CROPS
 from src.ml_models.dose_response import fit_dose_response, DoseResponseFit
 from src.ml_models.uncertainty import propagate_yield
 # NOTE: glmm (statsmodels) and bayesian (pymc/scipy) are heavy, fit-stage-only deps.
@@ -270,7 +270,7 @@ def run(dataset_arg: str | None, landings_path: Path, out_path: Path,
             "Tracker application uses the v8-fit curve on the real effective dose. The two "
             "doses share a definition but not a scale, so the yield figure is illustrative "
             "until the curve is refit on real (dose, fruit_set) pairs joined via "
-            "bee_hero_dataset.join_fruit_set_labels once field labels + cross-time flower "
+            "visit_dataset.join_fruit_set_labels once field labels + cross-time flower "
             "identity exist.",
             "Only the dwell gate applies on real tracker output; velocity and fraction_on "
             "are not yet emitted by video_detect.py.",
