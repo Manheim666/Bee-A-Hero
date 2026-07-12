@@ -1,0 +1,13 @@
+# CV stage dependencies (heavy — separate from the data-stage requirements.txt).
+# Install (GPU, no venv needed):
+#   pip install -r src/cv_engine/requirements-cv.txt \
+#       --extra-index-url https://download.pytorch.org/whl/cu130
+# (drop --extra-index-url for a CPU-only install; add --break-system-packages on Arch/PEP-668).
+# Verified target: RTX 3050 6GB, Python 3.14, CUDA 13 wheels.
+torch
+torchvision
+ultralytics          # YOLO26 + BoT-SORT tracking
+opencv-python        # video I/O + box drawing (cv2)
+lap                  # tracker association (BoT-SORT/ByteTrack)
+timm                 # iNaturalist-pretrained classifier backbones (pollinator/non)
+safetensors          # load HF/timm weights

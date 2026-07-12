@@ -1,0 +1,53 @@
+{
+  "filter_original": [
+    {
+      "source": "train_mini.json",
+      "images_before": 500000,
+      "images_after": 126290,
+      "annotations_before": 500000,
+      "annotations_after": 126290,
+      "categories_before": 10000,
+      "categories_after": 2526
+    },
+    {
+      "source": "val.json",
+      "images_before": 100000,
+      "images_after": 25255,
+      "annotations_before": 100000,
+      "annotations_after": 25255,
+      "categories_before": 10000,
+      "categories_after": 2526
+    }
+  ],
+  "clean_labels": {
+    "train": {
+      "images": 106077,
+      "annotations": 106077
+    },
+    "val": {
+      "images": 22734,
+      "annotations": 22734
+    },
+    "test": {
+      "images": 22734,
+      "annotations": 22734
+    },
+    "num_categories": 2526
+  },
+  "validation": {
+    "num_classes": 2526,
+    "manifest_images": 151545,
+    "disk_images": 151545,
+    "images_without_labels": 0,
+    "labels_without_images": 0,
+    "duplicated_labels": 0,
+    "invalid_category_ids": 0,
+    "corrupted_labels": 0,
+    "cross_split_leakage": 0,
+    "examples": {
+      "images_without_labels": [],
+      "labels_without_images": []
+    },
+    "all_checks_pass": true
+  }
+}

@@ -1,0 +1,16 @@
+# Bee-A-Hero live camera sources — one per line, one camera per tree-side.
+# Copy this file to `sources.txt` to enable live camera mode.
+# Blank lines and lines starting with '#' are ignored.
+#
+# Preferred: label each camera with the tree side (4 cameras per tree):
+#   east=rtsp://user:pass@cam-east/stream
+#   west=rtsp://user:pass@cam-west/stream
+#   north=0                      # a local capture-device index
+#   south=/abs/path/to/feed.mp4  # a file — test the live path without hardware
+#
+# A bare line with no `side=` gets an auto label (cam0, cam1, ...):
+#   rtsp://cam/stream
+#
+# Live output goes to data/camera/csv/ (live_landings.csv + daily_flower_counts.csv),
+# kept separate from test_video_result/. If no camera opens, the pipeline falls back to
+# the test videos in data/raw/Test_Video/.
