@@ -25,7 +25,7 @@ The pipeline (all in `src/ml_models/`):
 
 | Module | Role |
 |---|---|
-| `bee_hero_dataset.py` | load visits, apply the **three qualifying gates** (dwell / velocity / fraction-on), build the per-flower effective dose `V` |
+| `visit_dataset.py` | load visits, apply the **three qualifying gates** (dwell / velocity / fraction-on), build the per-flower effective dose `V` |
 | `dose_response.py` | fit `FruitSet(V)` with bootstrap 95% CIs and AIC/BIC |
 | `glmm.py` | binomial **GLMM** with orchard/year random intercepts (statsmodels) |
 | `bayesian.py` | Bayesian curve with a **cross-crop prior** + prior-sensitivity check |
@@ -76,14 +76,20 @@ Fit on v11, the pipeline **recovers the known asymptotes** almost exactly:
 ## Run it
 
 ```bash
-# one-shot pipeline (prints params + yield, writes models/dose_response_v11.json)
+# one-shot pipeline (prints params + yield, writes the git-ignored models/yield_report.json;
+# the committed models/dose_response_v11.json curve is read-only)
 python -m src.ml_models.train --dataset data/processed/dataset_training_v11.csv
+
+# apply-only: reuse the committed v11 curve on the CV landings (no re-fit, no statsmodels;
+# also auto-selected when statsmodels is not installed)
+python -m src.ml_models.train --apply-only
 
 # or open the notebook and Run All (portable Python 3 kernel, no path edits needed)
 notebooks/03_ml_dose_response.ipynb
 ```
 
-Deps: `numpy pandas scipy scikit-learn statsmodels matplotlib seaborn jupyter`.
+Deps (fit): `numpy pandas scipy scikit-learn statsmodels matplotlib seaborn jupyter`.
+Apply-only needs only `numpy pandas scipy`.
 
 ---
 
@@ -94,5 +100,5 @@ Deps: `numpy pandas scipy scikit-learn statsmodels matplotlib seaborn jupyter`.
 - **Not yet a real pomegranate model** — it is validated on synthetic and real-calibrated
   (proxy-crop) data. A true pomegranate fit needs **local per-flower fruit-set labels** and
   cross-time flower identity, which are field-data-collection tasks, not modeling gaps. The code
-  is already wired to accept them (`bee_hero_dataset.join_fruit_set_labels`, and the
+  is already wired to accept them (`visit_dataset.join_fruit_set_labels`, and the
   `anchor_f0` / `fmax_anchor` controls in `dose_response.fit_dose_response`).

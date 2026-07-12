@@ -748,7 +748,7 @@ fruit-set labels exist yet — is stated up front.
 
 ## 15. Current state
 
-- `src/ml_models/` contains only empty scaffolding (`train.py`, `bee_hero_dataset.py`,
+- `src/ml_models/` contains only empty scaffolding (`train.py`, `visit_dataset.py`,
   `__init__.py`) on every branch.
 - The project `.venv` has **only `scikit-learn` and `scipy`** for modeling — no
   `statsmodels`, no Bayesian stack. Adding dependencies is therefore step one of any real
@@ -808,7 +808,7 @@ Keep them out of `requirements-cv.txt` so the CV and modeling environments stay 
 
 ```
 src/ml_models/
-  bee_hero_dataset.py   # load ALL_visits.csv + ALL_timeline.csv, join fruit-set labels,
+  visit_dataset.py      # load ALL_visits.csv + ALL_timeline.csv, join fruit-set labels,
                         #   flower-type, cultivar/plant/date keys, weather -> modeling frame
   features.py           # dose (type-specific visit counts), temporal, spatial (Section 7),
                         #   environmental (Section 5) feature construction
@@ -833,7 +833,7 @@ src/ml_models/
 Each step produces something runnable and is validated against `simulate.py` output before
 touching (eventual) real data.
 
-1. **`simulate.py` + `bee_hero_dataset.py`** — a synthetic generator and the real-data
+1. **`simulate.py` + `visit_dataset.py`** — a synthetic generator and the real-data
    loader sharing one schema. This unblocks everything else without waiting for labels.
 2. **`baselines.py` + `evaluate.py`** — predict-the-mean and simple logistic under grouped
    CV, reporting Δlog-loss. Nothing more complex ships until it beats these (Section 6.1).
