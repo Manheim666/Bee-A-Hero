@@ -1,0 +1,89 @@
+# --- Large datasets / archives (regenerate with reproduce_bee_hero.py / RUN_ME.py) ---
+# Raw data lives under data/raw/iNaturist/ ; keep the folder, ignore its heavy contents.
+*.tar.gz
+data/raw/iNaturist/*
+!data/raw/iNaturist/.gitkeep
+# fallback: ignore these split dirs wherever they appear
+public_test/
+train_mini/
+val/
+
+# --- Flower dataset: source zip + rebuilt outputs (too large for git) ---
+data/raw/Flower/*
+!data/raw/Flower/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+
+# --- Legacy/regenerable pipeline outputs (kept on disk, untracked; clean rebuild lands in data/interim/) ---
+_pipeline/
+
+# --- Backups (Phase 3 safety copies) ---
+data/_backup/
+
+# --- Legacy scripts may regenerate these at root; keep root clean ---
+/data.yaml
+/dataset_config.json
+
+# --- Datasets are large — never pushed (raw video test folder) ---
+data/raw/Test_Video/
+
+# --- Markdown: only README.md is versioned; other notes stay local ---
+/*.md
+!/README.md
+/docs/DATA_PIPELINE.md
+/docs/eda_best_practices.md
+/docs/PIPELINE_WALKTHROUGH.md
+
+# --- Python artifacts ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# --- Env / local ---
+.env
+.venv/
+venv/
+.claude/settings.local.json
+
+# --- CV: model weights + training runs (large, never pushed) ---
+*.pt
+*.onnx
+*.engine
+runs/
+
+# --- CV bee-detection dataset (Roboflow BEE.v8i) ---
+data/raw/BEE_coco/
+
+# graphify output/cache (do not track)
+graphify-out/
+**/graphify-out/
+
+# annotated result videos (large, not pushed) — but keep the CSVs for the ML/LLM team.
+# results are grouped into csv/ and videos/ sub-folders; track only the CSVs.
+test_video_result/*
+!test_video_result/.gitkeep
+!test_video_result/csv/
+test_video_result/csv/*
+!test_video_result/csv/*.csv
+# Camera lane: per-machine config + constantly-changing live outputs. Keep only the examples,
+# so the camera CSVs never mix with test-video results and never enter the diff.
+data/camera/*
+!data/camera/.gitkeep
+!data/camera/sources.txt.example
+!data/camera/weather.json.example
+
+# --- Downloaded training datasets (large, never pushed) ---
+data/raw/*.coco/
+data/raw/Bee Detection in the Wild/
+data/raw/flower visits/
+data/raw/flowerDetecter-v2.v1i.coco/
+data/raw/*.v1i.coco/
+data/raw/DATASETS_TO_DOWNLOAD.md
+
+# ONNX deployment artifacts — large, regenerate with `python -m src.cv_engine.export_onnx`
+models/onnx/
+# --- ML runtime output (regenerable; the committed curve models/dose_response_v11.json stays tracked) ---
+models/yield_report.json
