@@ -18,10 +18,11 @@ report layer — the genuine tracker-to-yield path.
 The ML stage does **not** detect cameras; it only consumes the CSV the CV stage writes.
 Landings resolution (see :func:`resolve_landings`) is a single chain:
 
-    1. CV tracker export  ``test_video_result/csv/ALL_landings.csv`` (grouped, preferred)
-                          ``test_video_result/ALL_landings.csv``     (legacy-flat fallback)
-    2. SYNTHETIC v11      ``data/processed/dataset_training_v11.csv`` generated so the fit
-                          can still run when no CV export is present.
+    1. LIVE CAMERA lane   ``data/camera/csv/live_landings.csv``       (real cameras on the tree)
+    2. TEST-VIDEO checkup ``test_video_result/csv/ALL_landings.csv``  (our uploaded-video runs)
+                          ``test_video_result/ALL_landings.csv``      (legacy-flat fallback)
+    3. SYNTHETIC v11      ``data/processed/dataset_training_v11.csv``  generated so the fit
+                          can still run when no CV/camera export is present.
 
 Apply-only mode (``--apply-only``) reuses the committed curve ``models/dose_response_v11.json``
 without re-fitting, so it needs nothing beyond numpy/pandas/scipy. The default fit path is also
@@ -65,10 +66,17 @@ DATASET_CANDIDATES = (
 # Where the synthetic last-resort frame is written (git-ignored under data/).
 SYNTHETIC_DATASET = _PROCESSED_DIR / "dataset_training_v11.csv"
 
-# Apply-stage landings, resolved in precedence order: grouped (current CV layout) then
-# legacy-flat. Nothing else in the pipeline may hardcode a landings path (see resolve_landings).
+# Apply-stage landings, resolved in precedence order (see resolve_landings; nothing else may
+# hardcode a landings path):
+#   1. live camera lane  data/camera/csv/live_landings.csv   (real cameras on the tree)
+#   2. test-video checkup test_video_result/csv/ALL_landings.csv (our uploaded-video runs)
+#   3. legacy-flat        test_video_result/ALL_landings.csv
+# When none resolve, the fit stage trains on the synthetic v11 frame instead (per the project
+# plan: no real field data yet).
+_CAMERA_DIR = _REPO_ROOT / "data" / "camera"
 LANDINGS_CANDIDATES = (
-    _TEST_VIDEO_DIR / "csv" / "ALL_landings.csv",   # grouped path (current CV layout)
+    _CAMERA_DIR / "csv" / "live_landings.csv",      # live camera lane (preferred when cameras run)
+    _TEST_VIDEO_DIR / "csv" / "ALL_landings.csv",   # our test-video checkup (grouped)
     _TEST_VIDEO_DIR / "ALL_landings.csv",           # legacy-flat fallback
 )
 
@@ -233,6 +241,37 @@ def _fit_from_report(rep: dict, *, n_boot: int = 400, seed: int = 42) -> DoseRes
 
 
 # --------------------------------------------------------------------------- #
+# Data engineering — clean + derive model-ready features before the fit
+# --------------------------------------------------------------------------- #
+def engineer_dataset(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean and feature-engineer the modeling frame before fitting (reports what it did).
+
+    Minimal, honest data engineering shared by the synthetic and real (camera/test-video) frames:
+      * derive the effective dose ``V`` (CV ``pollination_score``, or reconstructed from aggregates)
+        when absent;
+      * drop rows missing the dose or the fruit-set label, and any non-finite ``V``;
+      * clip ``V`` to a non-negative, outlier-trimmed range (99th percentile) so a few extreme
+        flowers don't dominate the curve fit;
+      * carry weather covariates through when the CV export supplies them (``temp_c`` / ``wind_ms``
+        / ``humidity_pct``) — the schema is ready for weather gates even before a station is wired.
+    """
+    n0 = len(df)
+    if "V" not in df.columns:
+        df["V"] = ds.effective_dose_from_aggregates(df)
+    label = "fruit_set" if "fruit_set" in df.columns else "fruit_set_label"
+    keep = ["V"] + ([label] if label in df.columns else [])
+    df = df.dropna(subset=keep)
+    df = df[np.isfinite(df["V"])]
+    if len(df):
+        hi = float(np.nanpercentile(df["V"], 99))
+        df["V"] = df["V"].clip(lower=0.0, upper=hi if hi > 0 else None)
+    wx = [c for c in ("temp_c", "wind_ms", "humidity_pct") if c in df.columns]
+    print(f"[data-eng] rows {n0} -> {len(df)} (dropped {n0 - len(df)}); "
+          f"V clipped to [0, p99]; weather cols carried: {wx or 'none'}")
+    return df.reset_index(drop=True)
+
+
+# --------------------------------------------------------------------------- #
 # Fit stage — one curve per crop on the synthetic modeling frame
 # --------------------------------------------------------------------------- #
 def fit_on_dataset(dataset_path: Path) -> dict:
@@ -252,9 +291,7 @@ def fit_on_dataset(dataset_path: Path) -> dict:
     # therefore still completes without statsmodels — just without the optional GLMM sub-report.
     from src.ml_models.bayesian import bayes_dose_response, prior_sensitivity
 
-    df = pd.read_csv(dataset_path)
-    if "V" not in df.columns:
-        df["V"] = ds.effective_dose_from_aggregates(df)
+    df = engineer_dataset(pd.read_csv(dataset_path))
     target = "fruit_set" if "fruit_set" in df.columns else "fruit_set_label"
     fallback = {c["crop"]: c for c in CROPS}
 
