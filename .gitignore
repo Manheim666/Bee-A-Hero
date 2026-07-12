@@ -85,3 +85,5 @@ data/raw/DATASETS_TO_DOWNLOAD.md
 
 # ONNX deployment artifacts — large, regenerate with `python -m src.cv_engine.export_onnx`
 models/onnx/
+# --- ML runtime output (regenerable; the committed curve models/dose_response_v11.json stays tracked) ---
+models/yield_report.json
