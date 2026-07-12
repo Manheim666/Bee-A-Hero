@@ -8,7 +8,7 @@ Wires the modeling pipeline end to end:
 
 Because no real fruit-set labels exist yet (research doc Section 16), the curve is
 **fit** on the processed training frame ``dataset_training_v11.csv`` (the same dataset as
-``notebooks/03_ml_dose_response.ipynb``). v11 carries no raw ``V`` column, so the effective
+``notebooks/03_ml.ipynb``). v11 carries no raw ``V`` column, so the effective
 dose ``V`` is the CV ``pollination_score`` (or is reconstructed from the per-flower
 aggregates), and the fit is validated by recovering the per-crop floor/ceiling
 (``p_self_used`` / ``p_cross_used``). The fitted curve is then **applied** to the tracker
