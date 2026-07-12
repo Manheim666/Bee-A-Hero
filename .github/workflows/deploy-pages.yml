@@ -39,6 +39,8 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: npm run build -- --base=/Bee-A-Hero/
+      - name: SPA fallback (client-side routing on deep-link refresh)
+        run: cp dist/index.html dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: bee-a-hero-app/frontend/dist
