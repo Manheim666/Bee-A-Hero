@@ -1,0 +1,5 @@
+# Bee-A-Hero web viewer (src/webapp/app.py).
+#   pip install -r src/webapp/requirements-web.txt
+# Reads the CSVs the CV pipeline writes and reports the current input source using
+# the same src.cv_engine.source.resolve_source rule as the CLI. Flask only.
+flask>=3.0

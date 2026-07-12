@@ -22,8 +22,12 @@ FLOWER_DIR: Path = RAW_DIR / "Flower"
 # Roboflow bee-detection COCO export (BEE.v8i). Place it here on any machine
 # (git-ignored); overridable via the BEE_COCO_DIR env var for other layouts.
 BEE_COCO_DIR: Path = Path(__import__("os").environ.get("BEE_COCO_DIR", RAW_DIR / "BEE_coco"))
-# Videos to run the visit-counter on.
+# Videos to run the visit-counter on (fallback when no live camera is present).
 TEST_VIDEO_DIR: Path = RAW_DIR / "Test_Video"
+# Live-camera config lives here. If ``camera/sources.txt`` lists >=1 active source
+# (device index, RTSP/HTTP URL, or file path) the pipeline runs live; otherwise it
+# falls back to TEST_VIDEO_DIR. See src/cv_engine/source.py.
+CAMERA_DIR: Path = DATA_DIR / "camera"
 
 # Published trained-weights repo on the Hugging Face Hub (for teammates to pull).
 HF_WEIGHTS_REPO: str = "Manheim/bee-a-hero-cv"

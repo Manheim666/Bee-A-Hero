@@ -1,0 +1,12 @@
+# Bee-A-Hero live camera sources — one per line.
+# Copy this file to `sources.txt` and list your cameras to enable live mode.
+# Blank lines and lines starting with '#' are ignored.
+#
+# Accepted forms:
+#   0                          local webcam / capture-device index
+#   rtsp://user:pass@cam/stream IP camera (RTSP)
+#   http://cam/video.mjpg      MJPEG/HTTP stream
+#   /abs/path/to/feed.mp4      a file — useful to test the live path without hardware
+#
+# If sources.txt is absent or none of its cameras open, the pipeline falls back
+# to the test videos in data/raw/Test_Video/.
