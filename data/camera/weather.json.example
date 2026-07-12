@@ -1,0 +1,6 @@
+{
+  "_comment": "Copy to weather.json to attach weather covariates to each camera landing. Real capture (station/API) is wired in later; these columns feed the ML weather gates.",
+  "temp_c": 22.5,
+  "wind_ms": 1.8,
+  "humidity_pct": 55
+}
