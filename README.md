@@ -5,7 +5,7 @@ it turns the computer-vision pipeline's per-flower **pollinator-visit** records 
 **fruit-set** and **yield** estimate, with uncertainty.
 
 The full modeling stack lives in `src/ml_models/` and is demonstrated end-to-end in one notebook,
-`notebooks/03_ml_dose_response.ipynb`.
+`notebooks/03_ml.ipynb`.
 
 ---
 
@@ -85,7 +85,7 @@ python -m src.ml_models.train --dataset data/processed/dataset_training_v11.csv
 python -m src.ml_models.train --apply-only
 
 # or open the notebook and Run All (portable Python 3 kernel, no path edits needed)
-notebooks/03_ml_dose_response.ipynb
+notebooks/03_ml.ipynb
 ```
 
 Deps (fit): `numpy pandas scipy scikit-learn statsmodels matplotlib seaborn jupyter`.
