@@ -23,9 +23,10 @@ Landings resolution (see :func:`resolve_landings`) is a single chain:
     2. SYNTHETIC v11      ``data/processed/dataset_training_v11.csv`` generated so the fit
                           can still run when no CV export is present.
 
-Apply-only mode (auto-selected when ``statsmodels`` is unavailable, or forced with
-``--apply-only``) reuses the committed curve ``models/dose_response_v11.json`` without
-re-fitting, so it needs nothing beyond numpy/pandas/scipy.
+Apply-only mode (``--apply-only``) reuses the committed curve ``models/dose_response_v11.json``
+without re-fitting, so it needs nothing beyond numpy/pandas/scipy. The default fit path is also
+statsmodels-optional: without statsmodels it fits the core curve + Bayesian layer and skips only
+the optional GLMM (random-intercepts) sub-report, so a bare checkout still completes.
 
 Run:
     python -m src.ml_models.train
@@ -246,7 +247,9 @@ def fit_on_dataset(dataset_path: Path) -> dict:
     The GLMM/Bayesian layers (and therefore ``statsmodels``) are imported **here**, inside the
     fit stage, so importing this module and the apply-only path never require statsmodels.
     """
-    from src.ml_models.glmm import fit_glmm
+    # The core curve (scipy) and the Bayesian layer (numpy/scipy) need no statsmodels; only the
+    # GLMM random-intercepts layer does, so it is imported and run conditionally below. The fit
+    # therefore still completes without statsmodels — just without the optional GLMM sub-report.
     from src.ml_models.bayesian import bayes_dose_response, prior_sensitivity
 
     df = pd.read_csv(dataset_path)
@@ -270,7 +273,8 @@ def fit_on_dataset(dataset_path: Path) -> dict:
 
         # binomial GLMM (random intercepts) + Bayesian curve (cross-crop prior) — doc steps 4-5
         grp = tuple(c for c in ("orchard_id", "year") if c in g.columns)
-        if grp:
+        if grp and _statsmodels_available():
+            from src.ml_models.glmm import fit_glmm          # statsmodels-only layer (optional)
             rec["glmm"] = fit_glmm(g, dose_col="V", target=target, groups=grp).as_dict()
         bfit = bayes_dose_response(V, y)
         rec["bayesian"] = bfit.summary()
@@ -422,7 +426,7 @@ def main() -> None:
                          "the CV export (grouped -> legacy flat) via resolve_landings")
     ap.add_argument("--apply-only", action="store_true",
                     help="reuse the committed v11 curve; no re-fit, needs no statsmodels "
-                         "(auto-selected when statsmodels is unavailable)")
+                         "(requires resolvable tracker landings)")
     ap.add_argument("--out", default=str(OUT_JSON),
                     help="git-ignored runtime report (never the committed curve)")
     ap.add_argument("--n-flowers", type=int, default=DEFAULT_N_FLOWERS,
@@ -432,14 +436,16 @@ def main() -> None:
     args = ap.parse_args()
 
     landings = resolve_landings(args.tracker)
-    # Apply-only when explicitly requested or when the fit stage can't run (no statsmodels).
-    apply_only = args.apply_only or not _statsmodels_available()
-    if apply_only:
-        if not args.apply_only:
-            print("[0/2] statsmodels unavailable — running apply-only (committed v11 curve).")
+    # Apply-only is opt-in (reuse the committed curve, no re-fit). The default fit path runs the
+    # core curve + Bayesian layer with scipy/numpy alone, so a bare checkout still completes when
+    # statsmodels is absent — only the optional GLMM layer is skipped (noted below).
+    if args.apply_only:
         run(None, landings, Path(args.out), args.n_flowers, args.mean_mass, apply_only=True)
     else:
         dataset, source = ensure_training_dataset(args.dataset)
+        if not _statsmodels_available():
+            print("[note] statsmodels not installed — fitting the core curve + Bayesian layer; "
+                  "the optional GLMM (random-intercepts) layer is skipped.")
         print(f"[0/3] Fit dataset source: {source} -> {dataset}")
         run(dataset, landings, Path(args.out), args.n_flowers, args.mean_mass)
 
