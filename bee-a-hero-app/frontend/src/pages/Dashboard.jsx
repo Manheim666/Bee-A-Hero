@@ -90,7 +90,7 @@ export default function Dashboard() {
               }}
             >
               {videos.map((v) => (
-                <div className="card" key={v.id}>
+                <div className="card card-hover" key={v.id}>
                   <div
                     style={{
                       display: "flex",

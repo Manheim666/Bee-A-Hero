@@ -16,8 +16,8 @@ function Bubble({ role, children }) {
           borderRadius: 14,
           background: isUser
             ? "linear-gradient(135deg, var(--honey), var(--honey-deep))"
-            : "#fff8ec",
-          color: isUser ? "#fff" : "var(--bee-black)",
+            : "var(--queued-bg)",
+          color: isUser ? "#1a1208" : "var(--bee-black)",
           border: isUser ? "none" : "1px solid var(--border)",
           whiteSpace: "pre-wrap",
           lineHeight: 1.45,
