@@ -27,7 +27,9 @@ class Settings(BaseSettings):
     max_upload_mb: int = 200
     allowed_video_ext: tuple[str, ...] = (".mp4", ".mov", ".avi")
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # Absolute path so keys load no matter where uvicorn is launched from (the sh file, an
+    # IDE, etc.). Keys live only in this git-ignored file and are never printed or committed.
+    model_config = SettingsConfigDict(env_file=str(BACKEND_ROOT / ".env"), extra="ignore")
 
 
 settings = Settings()

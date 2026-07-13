@@ -14,7 +14,6 @@ from pathlib import Path
 import json
 
 # Models set in ONE constant each — change here to swap.
-ANTHROPIC_MODEL = "claude-opus-4-8"
 GEMINI_MODEL = "gemini-2.5-flash"
 
 # Read the real CV + ML result files so the assistant answers are grounded in them.
@@ -64,23 +63,6 @@ SYSTEM_PROMPT = (
     "concisely, and answer questions about the user's own detection stats. "
     "When the user's stats are provided, ground your answers in them."
 )
-
-
-def _anthropic_chat(messages: list[dict], user_context: str) -> str:
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    system = SYSTEM_PROMPT
-    if user_context:
-        system += f"\n\nThe current user's data:\n{user_context}"
-
-    response = client.messages.create(
-        model=ANTHROPIC_MODEL,
-        max_tokens=1024,
-        system=system,
-        messages=[{"role": m["role"], "content": m["content"]} for m in messages],
-    )
-    return "".join(block.text for block in response.content if block.type == "text")
 
 
 def _mock_chat(messages: list[dict], user_context: str) -> str:
@@ -137,15 +119,14 @@ def _gemini_chat(messages: list[dict], user_context: str) -> str:
 _PROVIDERS = {
     "gemini": ("gemini_api_key", _gemini_chat),
     "huggingface": ("hf_api_token", _hf_chat),
-    "anthropic": ("anthropic_api_key", _anthropic_chat),
 }
-_AUTO_ORDER = ["gemini", "huggingface", "anthropic"]
+_AUTO_ORDER = ["gemini", "huggingface"]
 
 
 def available_providers() -> list[dict]:
     """What the Assistant tab offers. `available` marks providers whose key/token is set."""
     out = [{"id": "auto", "label": "Auto", "available": True}]
-    labels = {"gemini": "Gemini", "huggingface": "Hugging Face", "anthropic": "Claude"}
+    labels = {"gemini": "Gemini", "huggingface": "Hugging Face"}
     for pid in _AUTO_ORDER:
         key = _PROVIDERS[pid][0]
         out.append({"id": pid, "label": labels[pid], "available": bool(getattr(settings, key, ""))})
