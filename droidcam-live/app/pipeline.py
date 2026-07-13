@@ -394,6 +394,42 @@ class Pipeline:
         return False
 
     @staticmethod
+    def _plausible_flower(box, frame_area: float) -> bool:
+        """A real flower is compact and only part of the frame -> reject slivers, noise, and
+        whole-scene boxes (the 'the whole screen is a flower' false positive)."""
+        x1, y1, x2, y2 = box
+        a = max(1.0, (x2 - x1) * (y2 - y1))
+        w, h = max(1.0, x2 - x1), max(1.0, y2 - y1)
+        aspect = max(w / h, h / w)
+        return (settings.flower_min_frac * frame_area <= a <= settings.flower_max_frac * frame_area
+                and aspect <= settings.flower_max_aspect)
+
+    @staticmethod
+    def _nms_boxes(cands: list) -> list:
+        """Class-agnostic NMS on [(box, conf)]: keep the highest-confidence box among any
+        overlapping/contained set -> no 'flower inside a flower' duplicates."""
+        order = sorted(range(len(cands)), key=lambda i: cands[i][1], reverse=True)
+        kept_boxes: list = []
+        for i in order:
+            box = cands[i][0]
+            ia = max(1.0, (box[2] - box[0]) * (box[3] - box[1]))
+            drop = False
+            for kb in kept_boxes:
+                ox1, oy1 = max(box[0], kb[0]), max(box[1], kb[1])
+                ox2, oy2 = min(box[2], kb[2]), min(box[3], kb[3])
+                inter = max(0.0, ox2 - ox1) * max(0.0, oy2 - oy1)
+                if inter <= 0:
+                    continue
+                ka = max(1.0, (kb[2] - kb[0]) * (kb[3] - kb[1]))
+                if (inter / (ia + ka - inter) >= settings.box_nms_iou
+                        or inter / min(ia, ka) >= settings.box_nms_contain):
+                    drop = True
+                    break
+            if not drop:
+                kept_boxes.append(box)
+        return kept_boxes
+
+    @staticmethod
     def _vetoed(box, persons, frame_area: float) -> bool:
         """True if `box` is too big to be a flower/insect, or its centre sits in a person."""
         x1, y1, x2, y2 = box
@@ -450,8 +486,9 @@ class Pipeline:
         persons = self._person_boxes(frame)
         detections: list[Detection] = []
 
-        # Flowers (per-frame detection; stable ids are assigned by the logger).
-        flower_boxes: list = []
+        # Flowers (per-frame detection; stable ids are assigned by the logger). Gate by shape/size
+        # (drop scene-sized false positives) then NMS so one flower is one box, not nested boxes.
+        flower_cand: list = []
         for r in self._models[self._flower_idx].predict(
             frame, conf=settings.flower_conf, imgsz=settings.img_size, verbose=False
         ):
@@ -461,7 +498,10 @@ class Pipeline:
                 x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
                 if self._vetoed((x1, y1, x2, y2), persons, frame_area):
                     continue
-                flower_boxes.append((x1, y1, x2, y2))
+                if not self._plausible_flower((x1, y1, x2, y2), frame_area):
+                    continue
+                flower_cand.append(((x1, y1, x2, y2), float(box.conf.item())))
+        flower_boxes = self._nms_boxes(flower_cand)
 
         # Insects (tracked across frames so landings can span a whole dwell). Held to a higher
         # confidence bar and vetoed when a box IS a flower (high IoU / near flower size) so a
