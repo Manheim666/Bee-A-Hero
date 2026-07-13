@@ -1,12 +1,34 @@
 import Hexagon from "./Hexagon.jsx";
 
-export default function VideoCard({ video, onDelete }) {
+export default function VideoCard({ video, onDelete, onOpen }) {
   const r = video.result;
   const processing =
     video.status === "queued" || video.status === "processing";
+  const canOpen = video.status === "done" && !!onOpen;
 
   return (
-    <div className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div
+      className={`card ${canOpen ? "card-hover" : ""}`}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        cursor: canOpen ? "pointer" : "default",
+      }}
+      onClick={canOpen ? () => onOpen(video) : undefined}
+      role={canOpen ? "button" : undefined}
+      tabIndex={canOpen ? 0 : undefined}
+      onKeyDown={
+        canOpen
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onOpen(video);
+              }
+            }
+          : undefined
+      }
+    >
       <div
         style={{
           height: 120,
@@ -15,11 +37,30 @@ export default function VideoCard({ video, onDelete }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          position: "relative",
         }}
       >
         <Hexagon size={54} background="rgba(255,255,255,0.7)" color="var(--honey-deep)">
           🎞️
         </Hexagon>
+        {canOpen && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              fontSize: "2.4rem",
+              textShadow: "0 2px 8px rgba(0,0,0,0.5)",
+              opacity: 0.85,
+              pointerEvents: "none",
+            }}
+          >
+            ▶
+          </div>
+        )}
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
@@ -62,13 +103,29 @@ export default function VideoCard({ video, onDelete }) {
         </div>
       )}
 
-      <button
-        className="btn btn-ghost"
-        style={{ alignSelf: "flex-start" }}
-        onClick={() => onDelete(video.id)}
-      >
-        Delete
-      </button>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {canOpen && (
+          <button
+            className="btn"
+            style={{ padding: "6px 14px", fontSize: "0.85rem" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(video);
+            }}
+          >
+            ▶ Play
+          </button>
+        )}
+        <button
+          className="btn btn-ghost"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(video.id);
+          }}
+        >
+          Delete
+        </button>
+      </div>
     </div>
   );
 }

@@ -59,6 +59,23 @@ export default function NavBar() {
           <NavLink to="/assistant" style={linkStyle}>
             Assistant
           </NavLink>
+          <a
+            href="http://localhost:8001/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: "8px 14px",
+              borderRadius: 999,
+              fontWeight: 600,
+              color: "var(--charcoal)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+            title="Open the DroidCam live detection viewer"
+          >
+            📷 Live Camera
+          </a>
         </div>
 
         <div

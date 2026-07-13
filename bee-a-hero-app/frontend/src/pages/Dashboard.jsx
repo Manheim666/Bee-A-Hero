@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import api from "../api";
 import { useAuth } from "../auth/AuthContext.jsx";
 import StatTile from "../components/StatTile.jsx";
+import VideoPlayer from "../components/VideoPlayer.jsx";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [overview, setOverview] = useState(null);
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [openVideo, setOpenVideo] = useState(null);
 
   useEffect(() => {
     Promise.all([api.get("/api/stats/overview"), api.get("/api/videos")])
@@ -89,38 +91,66 @@ export default function Dashboard() {
                 gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
               }}
             >
-              {videos.map((v) => (
-                <div className="card card-hover" key={v.id}>
+              {videos.map((v) => {
+                const canOpen = v.status === "done";
+                return (
                   <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 8,
-                    }}
+                    className="card card-hover"
+                    key={v.id}
+                    style={{ cursor: canOpen ? "pointer" : "default" }}
+                    onClick={canOpen ? () => setOpenVideo(v) : undefined}
+                    role={canOpen ? "button" : undefined}
+                    tabIndex={canOpen ? 0 : undefined}
+                    onKeyDown={
+                      canOpen
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setOpenVideo(v);
+                            }
+                          }
+                        : undefined
+                    }
                   >
-                    <strong
+                    <div
                       style={{
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 8,
                       }}
-                      title={v.original_name}
                     >
-                      {v.original_name}
-                    </strong>
-                    <span className={`pill pill-${v.status}`}>{v.status}</span>
+                      <strong
+                        style={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={v.original_name}
+                      >
+                        {v.original_name}
+                      </strong>
+                      <span className={`pill pill-${v.status}`}>{v.status}</span>
+                    </div>
+                    {v.result && (
+                      <p className="muted" style={{ fontSize: "0.85rem", marginBottom: 0 }}>
+                        {v.result.insect_tracks} visits ·{" "}
+                        {v.result.pollinator_visits} pollinator
+                        {canOpen && (
+                          <span style={{ color: "var(--honey-deep)", marginLeft: 6 }}>
+                            · ▶ play
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
-                  {v.result && (
-                    <p className="muted" style={{ fontSize: "0.85rem", marginBottom: 0 }}>
-                      {v.result.insect_tracks} visits ·{" "}
-                      {v.result.pollinator_visits} pollinator
-                    </p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
+      )}
+      {openVideo && (
+        <VideoPlayer video={openVideo} onClose={() => setOpenVideo(null)} />
       )}
     </div>
   );

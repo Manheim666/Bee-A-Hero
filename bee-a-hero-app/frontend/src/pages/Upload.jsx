@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../api";
 import VideoCard from "../components/VideoCard.jsx";
+import VideoPlayer from "../components/VideoPlayer.jsx";
 
 export default function Upload() {
   const [videos, setVideos] = useState([]);
   const [progress, setProgress] = useState(null);
   const [error, setError] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  const [openVideo, setOpenVideo] = useState(null);
   const fileRef = useRef(null);
   const pollRef = useRef(null);
 
@@ -154,9 +156,17 @@ export default function Upload() {
           style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}
         >
           {videos.map((v) => (
-            <VideoCard key={v.id} video={v} onDelete={handleDelete} />
+            <VideoCard
+              key={v.id}
+              video={v}
+              onDelete={handleDelete}
+              onOpen={setOpenVideo}
+            />
           ))}
         </div>
+      )}
+      {openVideo && (
+        <VideoPlayer video={openVideo} onClose={() => setOpenVideo(null)} />
       )}
     </div>
   );
