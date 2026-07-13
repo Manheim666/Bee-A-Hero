@@ -172,6 +172,9 @@ class Pipeline:
     # ------------------------------------------------------------------ capture
     def _capture_loop(self) -> None:
         url = settings.droidcam_url
+        # A bare integer (e.g. "0") means a LOCAL webcam device, not an http stream —
+        # so "live camera" works with the machine's own camera when there's no phone.
+        source = int(url) if url.strip().isdigit() else url
         cap: Optional[cv2.VideoCapture] = None
         frames = 0
         window_start = time.time()
@@ -180,15 +183,15 @@ class Pipeline:
             if cap is None or not cap.isOpened():
                 self.state.connected = False
                 self.state.reconnecting = True
-                log.info("Opening DroidCam stream: %s", url)
-                cap = cv2.VideoCapture(url)
+                log.info("Opening camera source: %s", source)
+                cap = cv2.VideoCapture(source)
                 # Cheap trick: keep buffer tiny so we always read the latest.
                 try:
                     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
                 except Exception:
                     pass
                 if not cap.isOpened():
-                    self.state.last_error = f"Could not open {url}"
+                    self.state.last_error = f"Could not open {source}"
                     log.warning("Open failed; retrying in %.1fs", settings.reconnect_delay)
                     time.sleep(settings.reconnect_delay)
                     continue
