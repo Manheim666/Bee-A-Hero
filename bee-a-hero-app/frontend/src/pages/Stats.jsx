@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import CropYield from "../components/CropYield.jsx";
 import {
   CartesianGrid,
   Line,
@@ -49,6 +50,7 @@ export default function Stats() {
   return (
     <div className="container">
       <h1>Pollination analytics</h1>
+      <CropYield />
       <p className="muted">
         Filter by video, date range, and insect type. Warm = pollinator, cool =
         non-pollinator, in every chart.
