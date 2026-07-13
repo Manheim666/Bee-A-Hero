@@ -136,3 +136,4 @@ class ConversationDetail(BaseModel):
 
 class MessageCreate(BaseModel):
     content: str
+    provider: str | None = None   # "auto" | "gemini" | "huggingface" | "anthropic" | "mock"

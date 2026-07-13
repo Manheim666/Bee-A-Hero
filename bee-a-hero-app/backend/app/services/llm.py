@@ -101,6 +101,20 @@ def _mock_chat(messages: list[dict], user_context: str) -> str:
     )
 
 
+def _hf_chat(messages: list[dict], user_context: str) -> str:
+    # Open-source model via Hugging Face Inference. Low temperature for factual, technical
+    # answers: softmax T=0.3 with top-p=0.9 nucleus sampling on the truncated vocabulary.
+    from huggingface_hub import InferenceClient
+
+    client = InferenceClient(model=settings.hf_model, token=settings.hf_api_token or None)
+    system = SYSTEM_PROMPT + (f"\n\nThe current user's data:\n{user_context}" if user_context else "")
+    msgs = [{"role": "system", "content": system}] + [
+        {"role": m["role"], "content": m["content"]} for m in messages
+    ]
+    out = client.chat_completion(messages=msgs, max_tokens=1024, temperature=0.3, top_p=0.9)
+    return (out.choices[0].message.content or "").strip()
+
+
 def _gemini_chat(messages: list[dict], user_context: str) -> str:
     from google import genai
     from google.genai import types
@@ -119,16 +133,45 @@ def _gemini_chat(messages: list[dict], user_context: str) -> str:
     return (resp.text or "").strip()
 
 
-def chat(messages: list[dict], user_context: str) -> str:
+# provider id -> (settings key that must be set, chat fn). "auto" tries them in this order.
+_PROVIDERS = {
+    "gemini": ("gemini_api_key", _gemini_chat),
+    "huggingface": ("hf_api_token", _hf_chat),
+    "anthropic": ("anthropic_api_key", _anthropic_chat),
+}
+_AUTO_ORDER = ["gemini", "huggingface", "anthropic"]
+
+
+def available_providers() -> list[dict]:
+    """What the Assistant tab offers. `available` marks providers whose key/token is set."""
+    out = [{"id": "auto", "label": "Auto", "available": True}]
+    labels = {"gemini": "Gemini", "huggingface": "Hugging Face", "anthropic": "Claude"}
+    for pid in _AUTO_ORDER:
+        key = _PROVIDERS[pid][0]
+        out.append({"id": pid, "label": labels[pid], "available": bool(getattr(settings, key, ""))})
+    out.append({"id": "mock", "label": "Demo (offline)", "available": True})
+    return out
+
+
+def chat(messages: list[dict], user_context: str, provider: str | None = None) -> str:
     # ground every answer in the real CV + ML result files, alongside the caller's DB stats
     results = read_result_context()
     if results:
         user_context = (user_context + "\n" + results).strip() if user_context else results
-    # Provider priority: Gemini -> Anthropic -> grounded mock. Any API error falls back cleanly.
-    for key, fn in (("gemini_api_key", _gemini_chat), ("anthropic_api_key", _anthropic_chat)):
-        if getattr(settings, key):
+
+    prov = (provider or "auto").lower()
+    if prov == "mock":
+        return _mock_chat(messages, user_context)
+    if prov in _PROVIDERS:
+        order = [prov]                      # user picked a specific provider
+    else:
+        order = _AUTO_ORDER                 # "auto"/unknown -> priority chain
+
+    for pid in order:
+        key, fn = _PROVIDERS[pid]
+        if getattr(settings, key, ""):      # only try a provider whose key/token is configured
             try:
                 return fn(messages, user_context)
-            except Exception as exc:  # never let the demo break on an API hiccup
-                print(f"[llm] {fn.__name__} failed ({type(exc).__name__}: {exc}); trying next.")
-    return _mock_chat(messages, user_context)
+            except Exception as exc:        # never let the demo break on an API hiccup
+                print(f"[llm] {fn.__name__} failed ({type(exc).__name__}: {exc}); falling back.")
+    return _mock_chat(messages, user_context)  # nothing configured / all failed
