@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     secret_key: str = "dev-secret-change-me-please-0123456789"
     anthropic_api_key: str = ""
     gemini_api_key: str = ""            # read from .env (git-ignored); never committed
+    hf_api_token: str = ""             # Hugging Face Inference token (free tier); .env only
+    hf_model: str = "meta-llama/Llama-3.1-8B-Instruct"  # open-source assistant model
     frontend_origin: str = "http://localhost:5173"
 
     # JWT
