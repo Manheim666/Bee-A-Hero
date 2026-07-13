@@ -35,7 +35,7 @@ export default function Assistant() {
     loadConversations();
   }
 
-  async function sendMessage(content) {
+  async function sendMessage(content, provider) {
     let conv = active;
     if (!conv) {
       const res = await api.post("/api/conversations");
@@ -52,7 +52,7 @@ export default function Assistant() {
     }));
     setSending(true);
     try {
-      await api.post(`/api/conversations/${conv.id}/messages`, { content });
+      await api.post(`/api/conversations/${conv.id}/messages`, { content, provider });
       const res = await api.get(`/api/conversations/${conv.id}`);
       setActive(res.data);
       loadConversations();
