@@ -80,11 +80,19 @@ LABEL_SWITCH_MARGIN = 1.5 # displayed label only switches when the leader's cumu
                           #   weight is >= this * the runner-up's -> kills brief flips
 
 # --- track stitching (kills phantom double-counts across detector drop-outs) ---
-RELINK_MAX_S = 3.0        # a track that reappears within this many seconds of vanishing ...
-RELINK_RADIUS_K = 3.0     #   ... and within RELINK_RADIUS_K * sqrt(area) of the vanish point is
-                          #   the SAME insect (occlusion / detector blink), not a new one. Merge
-                          #   the two raw tracks -> one unified track, one visit, box interpolated
-                          #   across the gap. A real fly-off returns far / late -> stays separate.
+RELINK_MAX_S = 5.0        # a track that reappears within this many seconds of vanishing ...
+RELINK_RADIUS_K = 4.0     #   ... and within RELINK_RADIUS_K * sqrt(area) of the vanish point is
+                          #   the SAME insect (occlusion behind a petal / detector blink), not a new
+                          #   one. Merge the two raw tracks -> one unified track, one visit, box
+                          #   interpolated across the gap. A real fly-off returns far / late -> stays
+                          #   separate. Window+radius are generous so a bee dipping behind a petal
+                          #   for a few seconds is never counted twice.
+
+# --- flower persistence (flowers are static -> hold + cumulatively average boxes) ---
+FLOWER_BOX_EMA = 0.85     # heavy EMA on a flower's box: a static flower's position is a running
+                          #   (cumulative) average of its detections -> a rock-steady box.
+FLOWER_HOLD_S = 8.0       # keep drawing/associating a flower this long after its last detection, so
+                          #   a missed frame never makes the flower box flicker or disappear.
 
 # --- drawing ------------------------------------------------------------------
 INSECT_BOX_SMOOTH = 0.6   # EMA on the drawn (interpolated) box -> damps wing-flap size swings
@@ -345,6 +353,37 @@ def _interpolate(det):
     return smooth
 
 
+class FlowerPersistence:
+    """Hold + cumulatively-average flower boxes so a static flower never flickers.
+
+    Flowers do not move within a clip, so each flower's box is treated as a running average
+    (heavy EMA) of its detections, and is kept for FLOWER_HOLD_S after its last detection.
+    A missed detection frame therefore leaves the flower box exactly where it was instead of
+    dropping it -> no disappearance, no jitter."""
+
+    def __init__(self, out_fps):
+        self._hold = FLOWER_HOLD_S * max(1.0, out_fps)
+        self._reg: dict = {}                       # fid -> {"box": ema_box, "last": fi}
+
+    def update(self, flowers, fi):
+        for fid, box in flowers:
+            box = tuple(float(v) for v in box)
+            r = self._reg.get(fid)
+            if r is None:
+                self._reg[fid] = {"box": box, "last": fi}
+            else:
+                r["box"] = tuple(FLOWER_BOX_EMA * o + (1 - FLOWER_BOX_EMA) * n
+                                 for o, n in zip(r["box"], box))
+                r["last"] = fi
+        out = []
+        for fid, r in list(self._reg.items()):
+            if fi - r["last"] > self._hold:
+                del self._reg[fid]                 # gone far longer than a plausible occlusion
+                continue
+            out.append((fid, r["box"]))
+        return out
+
+
 def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
                      conf=0.25, flower_conf=0.15, save_video=False,
                      flower_interval=5, target_fps=TARGET_FPS,
@@ -371,6 +410,7 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
     vid_stem = Path(video).stem
 
     ftracker = FlowerTracker(flower_model, flower_conf)
+    flower_persist = FlowerPersistence(out_fps)               # hold+average static flower boxes
     unk_reg: dict[str, tuple] = {}                            # synthetic flower id -> centre
     next_unk = 1
 
@@ -385,6 +425,7 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
         H, W = frame.shape[:2]
         flowers = ftracker.update(frame) if fi % flower_interval == 0 else ftracker.current()
         flowers = [(fid, fb) for fid, fb in flowers if _plausible_flower(fb, W * H)]
+        flowers = flower_persist.update(flowers, fi)          # hold + average -> no flicker/disappear
         flowers_by_fi[fi] = list(flowers)
         n_frames = fi + 1
         b = res.boxes
