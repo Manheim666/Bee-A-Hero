@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     secret_key: str = "dev-secret-change-me-please-0123456789"
     anthropic_api_key: str = ""
+    gemini_api_key: str = ""            # read from .env (git-ignored); never committed
     frontend_origin: str = "http://localhost:5173"
 
     # JWT

@@ -13,8 +13,9 @@ from ..config import settings
 from pathlib import Path
 import json
 
-# Model is set in ONE constant — change here to swap models.
+# Models set in ONE constant each — change here to swap.
 ANTHROPIC_MODEL = "claude-opus-4-8"
+GEMINI_MODEL = "gemini-2.5-flash"
 
 # Read the real CV + ML result files so the assistant answers are grounded in them.
 _REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -100,17 +101,34 @@ def _mock_chat(messages: list[dict], user_context: str) -> str:
     )
 
 
+def _gemini_chat(messages: list[dict], user_context: str) -> str:
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=settings.gemini_api_key)
+    system = SYSTEM_PROMPT + (f"\n\nThe current user's data:\n{user_context}" if user_context else "")
+    contents = [
+        types.Content(role="model" if m["role"] == "assistant" else "user",
+                      parts=[types.Part(text=m["content"])])
+        for m in messages
+    ]
+    resp = client.models.generate_content(
+        model=GEMINI_MODEL, contents=contents,
+        config=types.GenerateContentConfig(system_instruction=system, max_output_tokens=1024),
+    )
+    return (resp.text or "").strip()
+
+
 def chat(messages: list[dict], user_context: str) -> str:
     # ground every answer in the real CV + ML result files, alongside the caller's DB stats
     results = read_result_context()
     if results:
         user_context = (user_context + "\n" + results).strip() if user_context else results
-    if settings.anthropic_api_key:
-        try:
-            return _anthropic_chat(messages, user_context)
-        except Exception as exc:  # never let the demo break on an API hiccup
-            return (
-                "(assistant fell back to demo mode after an API error: "
-                f"{exc}). {_mock_chat(messages, user_context)}"
-            )
+    # Provider priority: Gemini -> Anthropic -> grounded mock. Any API error falls back cleanly.
+    for key, fn in (("gemini_api_key", _gemini_chat), ("anthropic_api_key", _anthropic_chat)):
+        if getattr(settings, key):
+            try:
+                return fn(messages, user_context)
+            except Exception as exc:  # never let the demo break on an API hiccup
+                print(f"[llm] {fn.__name__} failed ({type(exc).__name__}: {exc}); trying next.")
     return _mock_chat(messages, user_context)
