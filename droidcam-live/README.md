@@ -58,6 +58,22 @@ show in the side panel.
 | `JPEG_QUALITY`   | `80`                                   | JPEG quality for streamed frames.                              |
 | `DEVICE`         | `cpu`                                  | `cpu`, `cuda`, or `mps`.                                       |
 
+## Camera source (switch at runtime)
+
+The **Camera source** panel in the viewer switches the live camera without a
+restart: paste your phone's DroidCam URL (`http://PHONE_IP:4747/video`) and
+Connect, or click **Use webcam** for the local camera. Phone and PC must be on
+the **same Wi‑Fi** (the DroidCam WiFi IP must be on the PC's subnet).
+
+## Live landing log
+
+When a **flower** model and an **insect** model are both loaded (set `MODEL_PATHS`
+/ `MODEL_LABELS` to the trained detectors), the viewer tracks insects, associates
+them to flowers, and appends one row per landing to `live_out/live_landings.csv`
+(+ `.json`) as insects land and leave — flower id, enter/exit, dwell, type — the
+same landing data the offline pipeline produces. A track occluded behind a petal
+is re‑linked so one bee is counted once.
+
 ## Endpoints
 
 - `GET /` — the viewer HTML.
@@ -65,6 +81,8 @@ show in the side panel.
 - `GET /api/stats` — JSON: `connected`, `reconnecting`, `inference_fps`,
   `capture_fps`, `detection_count`, `per_class_counts`, `frame_shape`,
   `uptime_sec`, `last_error`.
+- `GET /api/landings` — recent live landings (`total_landings`, `real_landings`, `recent`).
+- `GET`/`POST /api/source` — read / switch the camera source.
 - `GET /api/health` — current config snapshot.
 
 ## Reliability
