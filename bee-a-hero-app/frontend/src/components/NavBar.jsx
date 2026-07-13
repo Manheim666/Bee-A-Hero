@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 import Hexagon from "./Hexagon.jsx";
+import ThemeToggle from "./ThemeToggle.jsx";
 
 const linkStyle = ({ isActive }) => ({
   padding: "8px 14px",
@@ -24,7 +25,7 @@ export default function NavBar() {
   return (
     <nav
       style={{
-        background: "#fff",
+        background: "var(--card)",
         borderBottom: "1px solid var(--border)",
         boxShadow: "var(--shadow)",
       }}
@@ -68,6 +69,7 @@ export default function NavBar() {
             gap: 12,
           }}
         >
+          <ThemeToggle />
           <span className="pill pill-done">{user?.username}</span>
           <button className="btn btn-ghost" onClick={handleLogout}>
             Logout

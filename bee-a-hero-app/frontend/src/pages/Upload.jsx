@@ -93,7 +93,7 @@ export default function Upload() {
           borderStyle: "dashed",
           borderWidth: 2,
           borderColor: dragOver ? "var(--honey-deep)" : "var(--border)",
-          background: dragOver ? "#fff4dc" : "#fff",
+          background: dragOver ? "var(--amber-glow)" : "var(--card)",
         }}
       >
         <p style={{ fontSize: "2rem", margin: 0 }}>🎞️</p>
@@ -121,7 +121,7 @@ export default function Upload() {
             style={{
               height: 10,
               borderRadius: 999,
-              background: "#f0ebe0",
+              background: "var(--queued-bg)",
               overflow: "hidden",
             }}
           >
@@ -138,7 +138,7 @@ export default function Upload() {
         </div>
       )}
       {error && (
-        <p style={{ color: "#a13020", marginTop: 10 }}>{error}</p>
+        <p style={{ color: "var(--danger)", marginTop: 10 }}>{error}</p>
       )}
 
       <h2 style={{ marginTop: 30 }}>Your library</h2>

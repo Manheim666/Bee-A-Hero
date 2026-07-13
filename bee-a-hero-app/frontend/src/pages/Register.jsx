@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 import Hexagon from "../components/Hexagon.jsx";
+import ThemeToggle from "../components/ThemeToggle.jsx";
 
 export default function Register() {
   const { user, register } = useAuth();
@@ -9,6 +10,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -31,8 +33,11 @@ export default function Register() {
   return (
     <div
       className="container"
-      style={{ maxWidth: 420, marginTop: 60, textAlign: "center" }}
+      style={{ maxWidth: 420, marginTop: 60, textAlign: "center", position: "relative" }}
     >
+      <div style={{ position: "absolute", top: 0, right: 24 }}>
+        <ThemeToggle />
+      </div>
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
         <Hexagon size={72} style={{ fontSize: "1.8rem" }}>
           🐝
@@ -65,16 +70,25 @@ export default function Register() {
         <label className="muted" style={{ fontSize: "0.85rem" }}>
           Password
         </label>
-        <input
-          className="input"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ marginBottom: 16 }}
-          required
-        />
+        <div className="password-wrap" style={{ marginBottom: 16 }}>
+          <input
+            className="input"
+            type={showPw ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            className="password-toggle"
+            aria-label={showPw ? "Hide password" : "Show password"}
+            onClick={() => setShowPw((s) => !s)}
+          >
+            {showPw ? "🙈" : "👁️"}
+          </button>
+        </div>
         {error && (
-          <p style={{ color: "#a13020", fontSize: "0.9rem" }}>{error}</p>
+          <p style={{ color: "var(--danger)", fontSize: "0.9rem" }}>{error}</p>
         )}
         <button className="btn" style={{ width: "100%" }} disabled={busy}>
           {busy ? "Creating…" : "Register"}

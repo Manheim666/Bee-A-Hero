@@ -30,13 +30,15 @@ export default function VisitBarChart({ bars }) {
     <div style={{ width: "100%", height: 340 }}>
       <ResponsiveContainer>
         <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#efe3cc" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.25)" />
           <XAxis dataKey="flower" tick={{ fontSize: 12 }} />
           <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
           <Tooltip
             contentStyle={{
               borderRadius: 10,
               border: "1px solid var(--border)",
+              background: "var(--card)",
+              color: "var(--bee-black)",
             }}
           />
           <Legend />

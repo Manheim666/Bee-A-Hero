@@ -11,7 +11,7 @@ export default function VideoCard({ video, onDelete }) {
         style={{
           height: 120,
           borderRadius: 10,
-          background: "linear-gradient(135deg, #fff0d0, #ffe1a8)",
+          background: "linear-gradient(135deg, var(--queued-bg), var(--amber-glow))",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -52,7 +52,7 @@ export default function VideoCard({ video, onDelete }) {
         </div>
       )}
       {video.status === "failed" && (
-        <div className="muted" style={{ fontSize: "0.85rem", color: "#a13020" }}>
+        <div className="muted" style={{ fontSize: "0.85rem", color: "var(--danger)" }}>
           {video.error || "Detection failed"}
         </div>
       )}
