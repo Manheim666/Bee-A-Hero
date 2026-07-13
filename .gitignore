@@ -87,3 +87,6 @@ data/raw/DATASETS_TO_DOWNLOAD.md
 models/onnx/
 # --- ML runtime output (regenerable; the committed curve models/dose_response_v11.json stays tracked) ---
 models/yield_report.json
+
+# web-upload CV outputs (runtime)
+bee-a-hero-app/backend/cv_out/
