@@ -60,6 +60,12 @@ def _process_video(video_id: int) -> None:
         # the moment status flips to done — the player streams it without a second annotation pass.
         summary = run_detection(video.stored_path)
 
+        # Idempotent: clear any prior result/visits for this video so a re-run (e.g. an
+        # interrupted job, a reload) replaces them instead of hitting the UNIQUE(video_id).
+        db.query(Visit).filter(Visit.video_id == video.id).delete()
+        db.query(DetectionResult).filter(DetectionResult.video_id == video.id).delete()
+        db.flush()
+
         result = DetectionResult(
             video_id=video.id,
             flower_map=summary["flower_map"],
