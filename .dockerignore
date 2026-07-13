@@ -1,0 +1,17 @@
+# keep build context small — big/gitignored/runtime dirs are mounted, not copied
+.git
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/*.log
+bee-a-hero-app/frontend/dist
+bee-a-hero-app/backend/uploads
+bee-a-hero-app/backend/cv_out
+bee-a-hero-app/backend/bee.db
+data/
+test_video_result/
+models/
+graphify-out/
+graphify-out
+notebooks/
+*.mp4
