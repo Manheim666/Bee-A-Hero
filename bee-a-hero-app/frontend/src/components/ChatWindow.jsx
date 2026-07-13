@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import api from "../api";
 
 function Bubble({ role, children }) {
   const isUser = role === "user";
@@ -31,11 +32,20 @@ function Bubble({ role, children }) {
 
 export default function ChatWindow({ conversation, sending, onSend }) {
   const [text, setText] = useState("");
+  const [provider, setProvider] = useState("auto");
+  const [providers, setProviders] = useState([{ id: "auto", label: "Auto", available: true }]);
   const endRef = useRef(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversation?.messages?.length, sending]);
+
+  useEffect(() => {
+    api
+      .get("/api/conversations/providers")
+      .then((res) => setProviders(res.data))
+      .catch(() => {});
+  }, []);
 
   if (!conversation) {
     return (
@@ -57,7 +67,7 @@ export default function ChatWindow({ conversation, sending, onSend }) {
     e.preventDefault();
     const value = text.trim();
     if (!value || sending) return;
-    onSend(value);
+    onSend(value, provider);
     setText("");
   }
 
@@ -96,9 +106,24 @@ export default function ChatWindow({ conversation, sending, onSend }) {
         <div ref={endRef} />
       </div>
 
-      <form onSubmit={submit} style={{ display: "flex", gap: 8, marginTop: 12 }}>
+      <form onSubmit={submit} style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+        <select
+          className="input"
+          value={provider}
+          onChange={(e) => setProvider(e.target.value)}
+          title="Choose which model answers"
+          style={{ width: "auto", flex: "0 0 auto", cursor: "pointer" }}
+        >
+          {providers.map((p) => (
+            <option key={p.id} value={p.id} disabled={!p.available}>
+              {p.label}
+              {p.available ? "" : " (add key)"}
+            </option>
+          ))}
+        </select>
         <input
           className="input"
+          style={{ flex: 1, minWidth: 180 }}
           placeholder="Ask the Bee-A-Hero assistant…"
           value={text}
           onChange={(e) => setText(e.target.value)}

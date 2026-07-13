@@ -12,9 +12,15 @@ from ..schemas import (
     MessageOut,
 )
 from ..services import stats as stats_service
-from ..services.llm import chat as llm_chat
+from ..services.llm import available_providers, chat as llm_chat
 
 router = APIRouter(prefix="/api/conversations", tags=["chat"])
+
+
+@router.get("/providers")
+def list_providers(user: User = Depends(get_current_user)):
+    """LLM providers the Assistant tab can pick from (auto / gemini / hugging face / …)."""
+    return available_providers()
 
 
 def _owned_conversation(db: Session, conv_id: int, user: User) -> Conversation:
@@ -96,7 +102,7 @@ def post_message(
     history = [
         {"role": m.role.value, "content": m.content} for m in conv.messages
     ]
-    reply = llm_chat(history, _user_context(db, user))
+    reply = llm_chat(history, _user_context(db, user), payload.provider)
 
     assistant_msg = Message(
         conversation_id=conv.id,
