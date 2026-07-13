@@ -1,0 +1,12 @@
+# Heavy CV deps that make the backend run the REAL tracked pipeline (count_visits_det)
+# instead of the mock. Installed only in the Docker image / on a GPU box — the base
+# requirements.txt stays light so the app still boots with no models (mock fallback).
+# CPU install:  pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements-cv.txt
+torch
+torchvision
+ultralytics          # YOLO26 + BoT-SORT tracking
+opencv-python-headless>=4.9   # video I/O + box drawing, headless (no GUI libs) for servers
+lap                  # tracker association (BoT-SORT/ByteTrack)
+timm                 # honeybee subclassifier backbone
+safetensors          # load timm/HF weights
+numpy>=1.26

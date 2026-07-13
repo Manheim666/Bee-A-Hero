@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bee-A-Hero · Live Camera</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text x='50%' y='55%' text-anchor='middle' dominant-baseline='middle' font-size='52'>🐝</text></svg>" />
+    <style>
+      :root {
+        --bg: #14110c;
+        --panel: #1e1a13;
+        --border: #2f2a20;
+        --text: #f4ecdc;
+        --muted: #c9c0ae;
+        --honey: #ffb84a;
+        --honey-deep: #ffa02a;
+        --leaf: #7fd06e;
+        --danger: #ff8d76;
+        --shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        min-height: 100vh;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 22px;
+        border-bottom: 1px solid var(--border);
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.02em; }
+      .logo { display: inline-flex; align-items: center; gap: 10px; }
+      .logo-hex {
+        width: 34px; height: 34px;
+        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        background: linear-gradient(135deg, var(--honey), var(--honey-deep));
+        display: flex; align-items: center; justify-content: center;
+        color: #1a1208; font-weight: 700;
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: var(--panel);
+        border: 1px solid var(--border);
+      }
+      .dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: var(--muted);
+      }
+      .status.connected .dot { background: var(--leaf); box-shadow: 0 0 8px var(--leaf); }
+      .status.reconnecting .dot {
+        background: var(--honey);
+        animation: pulse 1.2s ease-in-out infinite;
+      }
+      .status.error .dot { background: var(--danger); }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.35; }
+      }
+      main {
+        display: grid;
+        gap: 18px;
+        padding: 22px;
+        grid-template-columns: minmax(0, 1fr);
+      }
+      @media (min-width: 900px) {
+        main {
+          grid-template-columns: minmax(0, 1fr) 300px;
+        }
+      }
+      .stream-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        position: relative;
+      }
+      .stream-card img {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: #000;
+      }
+      .stream-card .placeholder {
+        display: flex; align-items: center; justify-content: center;
+        min-height: 320px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .side {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .card h2 {
+        margin: 0 0 10px;
+        font-size: 0.78rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .stat {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--honey);
+        line-height: 1;
+      }
+      .stat small { color: var(--muted); font-weight: 500; font-size: 0.7rem; margin-left: 6px; text-transform: uppercase; letter-spacing: 0.12em; }
+      .rows { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+      .rows li {
+        display: flex; justify-content: space-between; gap: 10px;
+        font-size: 0.9rem;
+      }
+      .rows li .k { color: var(--muted); }
+      .rows li .v { font-weight: 600; color: var(--text); }
+      .empty { color: var(--muted); font-size: 0.85rem; }
+      .error-line {
+        color: var(--danger);
+        font-size: 0.8rem;
+        margin-top: 8px;
+        min-height: 1em;
+      }
+      footer {
+        padding: 14px 22px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        border-top: 1px solid var(--border);
+      }
+      code { color: var(--honey); background: rgba(255,184,74,0.08); padding: 1px 6px; border-radius: 4px; }
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text);
+        background: linear-gradient(135deg, var(--honey), var(--honey-deep));
+        text-decoration: none;
+        transition: transform 0.1s ease, opacity 0.15s ease;
+        color: #1a1208;
+      }
+      .back-link:hover { opacity: 0.9; }
+      .back-link:active { transform: translateY(1px); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <div class="logo-hex">🐝</div>
+        <h1>Bee-A-Hero · Live Camera</h1>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <a href="http://localhost:5173/" class="back-link" title="Back to the Bee-A-Hero web app">
+          ← Bee-A-Hero App
+        </a>
+        <div id="status" class="status reconnecting">
+          <span class="dot"></span>
+          <span id="statusText">Connecting…</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="stream-card" id="streamCard">
+        <div class="placeholder" id="streamPlaceholder">
+          Waiting for the first annotated frame…
+        </div>
+        <img id="stream" alt="Live detection stream" style="display:none" />
+      </div>
+
+      <aside class="side">
+        <div class="card">
+          <h2>Client FPS</h2>
+          <div class="stat"><span id="clientFps">0.0</span><small>frames/s</small></div>
+        </div>
+        <div class="card">
+          <h2>Server</h2>
+          <ul class="rows">
+            <li><span class="k">Inference FPS</span><span class="v" id="inferFps">0.0</span></li>
+            <li><span class="k">Capture FPS</span><span class="v" id="captureFps">0.0</span></li>
+            <li><span class="k">Detections</span><span class="v" id="detCount">0</span></li>
+            <li><span class="k">Frame</span><span class="v" id="frameShape">–</span></li>
+            <li><span class="k">Uptime</span><span class="v" id="uptime">0s</span></li>
+          </ul>
+          <div class="error-line" id="errLine"></div>
+        </div>
+        <div class="card">
+          <h2>By class</h2>
+          <ul class="rows" id="perClass">
+            <li class="empty">No detections yet.</li>
+          </ul>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      Stream source: <code id="src">/video_feed</code> · Stats poll every 1s ·
+      Retries automatically if the phone stream drops.
+    </footer>
+
+    <script>
+      const img = document.getElementById("stream");
+      const placeholder = document.getElementById("streamPlaceholder");
+      const statusEl = document.getElementById("status");
+      const statusText = document.getElementById("statusText");
+      const errLine = document.getElementById("errLine");
+
+      // Client-side FPS: measure decoded <img> loads.
+      let frameStamps = [];
+      function tickClientFps() {
+        const now = performance.now();
+        frameStamps.push(now);
+        while (frameStamps.length && now - frameStamps[0] > 1000) frameStamps.shift();
+        document.getElementById("clientFps").textContent =
+          frameStamps.length.toFixed(1);
+      }
+      img.addEventListener("load", () => {
+        if (placeholder.style.display !== "none") {
+          placeholder.style.display = "none";
+          img.style.display = "block";
+        }
+      });
+      // Note: for multipart streams the "load" event only fires once in most
+      // browsers, so we hook progress via a hidden ticker driven by setInterval
+      // that reads img.naturalWidth changes. Simpler: rely on server FPS + the
+      // stats endpoint's inference_fps for the authoritative rate. clientFps
+      // stays as a rough visual sanity check.
+
+      function bootStream() {
+        // Cache-bust so a full reload re-opens the multipart stream.
+        img.src = `/video_feed?ts=${Date.now()}`;
+      }
+
+      img.addEventListener("error", () => {
+        placeholder.style.display = "flex";
+        placeholder.textContent = "Stream dropped — retrying…";
+        img.style.display = "none";
+        setTimeout(bootStream, 2000);
+      });
+
+      bootStream();
+
+      function setStatus(kind, text) {
+        statusEl.className = "status " + kind;
+        statusText.textContent = text;
+      }
+
+      function fmtUptime(sec) {
+        sec = Math.round(sec);
+        if (sec < 60) return sec + "s";
+        const m = Math.floor(sec / 60), s = sec % 60;
+        if (m < 60) return `${m}m ${s}s`;
+        const h = Math.floor(m / 60), mm = m % 60;
+        return `${h}h ${mm}m`;
+      }
+
+      async function pollStats() {
+        try {
+          const res = await fetch("/api/stats");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const s = await res.json();
+          document.getElementById("inferFps").textContent = s.inference_fps.toFixed(1);
+          document.getElementById("captureFps").textContent = s.capture_fps.toFixed(1);
+          document.getElementById("detCount").textContent = s.detection_count;
+          document.getElementById("frameShape").textContent =
+            s.frame_shape.w && s.frame_shape.h
+              ? `${s.frame_shape.w}×${s.frame_shape.h}`
+              : "–";
+          document.getElementById("uptime").textContent = fmtUptime(s.uptime_sec);
+          errLine.textContent = s.last_error || "";
+
+          if (s.connected) {
+            setStatus("connected", `Connected · ${s.inference_fps.toFixed(1)} fps`);
+          } else if (s.reconnecting) {
+            setStatus("reconnecting", "Reconnecting to phone…");
+          } else {
+            setStatus("error", "Disconnected");
+          }
+
+          const per = document.getElementById("perClass");
+          const entries = Object.entries(s.per_class_counts || {});
+          if (entries.length === 0) {
+            per.innerHTML = '<li class="empty">No detections in current frame.</li>';
+          } else {
+            entries.sort((a, b) => b[1] - a[1]);
+            per.innerHTML = entries
+              .map(([k, v]) => `<li><span class="k">${k}</span><span class="v">${v}</span></li>`)
+              .join("");
+          }
+
+          // Client-side FPS tick approximation: server infer rate ~= visible
+          // MJPEG rate in most browsers. Cheap proxy.
+          tickClientFps();
+        } catch (err) {
+          setStatus("error", "API unreachable");
+          errLine.textContent = String(err);
+        }
+      }
+      setInterval(pollStats, 1000);
+      pollStats();
+    </script>
+  </body>
+</html>

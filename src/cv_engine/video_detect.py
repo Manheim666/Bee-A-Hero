@@ -58,9 +58,12 @@ LAND_GRACE_S = 0.5        # bridge tracker flicker / brief exits inside one land
 LABEL_SWITCH_MARGIN = 1.5 # displayed label only switches when the leader's cumulative vote
                           #   weight is >= this * the current label's -> kills brief flips
 INSECT_BOX_SMOOTH = 0.5   # EMA on the drawn insect box -> damps butterfly wing-flap size swings
-INSECT_HOLD_MAX = 72      # keep drawing a lost insect box up to ~3s (24fps) so it doesn't blink;
-                          #   holding stops earlier if the box reaches the frame edge (insect left)
-INSECT_EDGE_FRAC = 0.02   # box within 2% of any frame border -> treat as left-frame, stop holding
+INSECT_BOX_RESET = 1.5    # if a track's new box centre jumps > this * its box diagonal (an ID
+                          #   swap when two insects cross), snap instead of EMA-blending the two
+                          #   -> kills the "unified" box that used to span both insects
+INSECT_HOLD_MAX = 18      # keep drawing a lost insect box up to ~0.75s (24fps) so it doesn't blink
+                          #   but doesn't linger after the insect has gone; stops at the frame edge
+INSECT_EDGE_FRAC = 0.04   # box within 4% of any frame border -> treat as left-frame, stop holding
 MIN_TRACK_DRAW = 3        # a track must be detected in >= this many frames before its box is drawn
                           #   -> a 1-2 frame false blip (e.g. flower momentarily read as bee) never shows
 MAX_INSECT_FRAME_FRAC = 0.18  # reject any insect box bigger than this fraction of the frame: a real
@@ -251,10 +254,19 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
                     ep = sub["ep"]
                     if ep is not None and t_s - ep["last_t"] > LAND_GRACE_S:
                         finalize(tid)
-                # EMA-smooth the drawn box (damps butterfly wing-flap size swings), reset hold
-                sub["dbox"] = tuple(float(v) for v in box) if sub["dbox"] is None else \
-                    tuple(INSECT_BOX_SMOOTH * o + (1 - INSECT_BOX_SMOOTH) * v
-                          for o, v in zip(sub["dbox"], box))
+                # EMA-smooth the drawn box (damps butterfly wing-flap size swings), reset hold.
+                # On a big centre jump (BoT-SORT ID swap when two insects cross) snap to the new
+                # box instead of blending -> no "unified" box spanning both insects.
+                if sub["dbox"] is None:
+                    sub["dbox"] = tuple(float(v) for v in box)
+                else:
+                    ocx, ocy = (sub["dbox"][0] + sub["dbox"][2]) / 2, (sub["dbox"][1] + sub["dbox"][3]) / 2
+                    diag = ((box[2] - box[0]) ** 2 + (box[3] - box[1]) ** 2) ** 0.5
+                    if ((cen[0] - ocx) ** 2 + (cen[1] - ocy) ** 2) ** 0.5 > INSECT_BOX_RESET * diag:
+                        sub["dbox"] = tuple(float(v) for v in box)
+                    else:
+                        sub["dbox"] = tuple(INSECT_BOX_SMOOTH * o + (1 - INSECT_BOX_SMOOTH) * v
+                                            for o, v in zip(sub["dbox"], box))
                 sub["dtyp"], sub["miss"] = typ, 0
                 if sub["n"] >= MIN_TRACK_DRAW:                 # persistence gate: skip transient false blips
                     drawn.append((tid, sub["dbox"], typ))
