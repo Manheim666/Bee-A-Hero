@@ -49,7 +49,7 @@ show in the side panel.
 
 | Key              | Default                                | Purpose                                                        |
 | ---------------- | -------------------------------------- | -------------------------------------------------------------- |
-| `DROIDCAM_URL`   | `http://192.168.1.100:4747/video`      | MJPEG stream from the phone.                                   |
+| `DROIDCAM_URL`   | `http://192.168.1.100:4747/video`      | Camera source. Phone MJPEG url, **or a bare index (`0`) for the local webcam** — so the live viewer works with no phone. |
 | `MODEL_PATHS`    | `yolov8n.pt`                           | Comma-separated ultralytics weight paths.                      |
 | `MODEL_LABELS`   | *(empty)*                              | Optional per-model tag drawn on boxes.                         |
 | `CONF_THRESHOLD` | `0.35`                                 | Minimum detection confidence.                                  |
