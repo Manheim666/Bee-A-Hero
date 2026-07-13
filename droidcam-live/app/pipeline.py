@@ -120,6 +120,7 @@ class Pipeline:
         self._threads: list[threading.Thread] = []
         self._models = []
         self._model_labels: list[str] = []
+        self._person_model = None            # COCO detector for the human-veto (lazy)
 
     # ------------------------------------------------------------------ setup
     def start(self) -> None:
@@ -159,6 +160,14 @@ class Pipeline:
                     log.warning("Could not move model to %s: %s", settings.device, exc)
             self._models.append(model)
             self._model_labels.append(lbl)
+
+        if settings.person_veto:
+            try:
+                self._person_model = YOLO(settings.person_model)   # auto-downloads if absent
+                log.info("Person-veto enabled (%s)", settings.person_model)
+            except Exception as exc:
+                log.warning("Person-veto model unavailable (%s); size-gate still active", exc)
+                self._person_model = None
 
     # ------------------------------------------------------------------ capture
     def _capture_loop(self) -> None:
@@ -257,9 +266,37 @@ class Pipeline:
                 infer_count = 0
                 window_start = now
 
+    def _person_boxes(self, frame: np.ndarray) -> list[tuple[int, int, int, int]]:
+        """COCO person boxes for the veto (empty if the veto model is off/unavailable)."""
+        if self._person_model is None:
+            return []
+        boxes: list[tuple[int, int, int, int]] = []
+        for r in self._person_model.predict(
+            frame, conf=settings.person_conf, imgsz=settings.img_size,
+            classes=[0], verbose=False,        # class 0 = person
+        ):
+            if r.boxes is None:
+                continue
+            for box in r.boxes:
+                x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
+                boxes.append((x1, y1, x2, y2))
+        return boxes
+
+    @staticmethod
+    def _vetoed(box, persons, frame_area: float) -> bool:
+        """True if `box` is too big to be a flower/insect, or its centre sits in a person."""
+        x1, y1, x2, y2 = box
+        if (x2 - x1) * (y2 - y1) > settings.max_box_frac * frame_area:
+            return True                        # frame-filling blob -> wall/person/FP
+        cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+        return any(px1 <= cx <= px2 and py1 <= cy <= py2 for px1, py1, px2, py2 in persons)
+
     def _run_inference(self, frame: np.ndarray) -> tuple[np.ndarray, list[Detection]]:
         detections: list[Detection] = []
         annotated = frame.copy()
+        h, w = frame.shape[:2]
+        frame_area = float(h * w)
+        persons = self._person_boxes(frame)    # detect humans once, then veto against them
 
         for model_idx, model in enumerate(self._models):
             results = model.predict(
@@ -277,6 +314,8 @@ class Pipeline:
                     cls_id = int(box.cls.item())
                     conf = float(box.conf.item())
                     x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
+                    if self._vetoed((x1, y1, x2, y2), persons, frame_area):
+                        continue               # drop human / oversized false positive
                     label = names.get(cls_id, str(cls_id)) if isinstance(names, dict) else names[cls_id]
                     det = Detection(
                         label=label,
