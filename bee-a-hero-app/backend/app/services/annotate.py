@@ -132,12 +132,21 @@ def annotate_video(
         src.name, dst.name, fps, width, height, total, len(models),
     )
 
-    # mp4v is universally supported by cv2 wheels; browsers play it fine.
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    writer = cv2.VideoWriter(str(dst), fourcc, fps, (width, height))
-    if not writer.isOpened():
+    # Prefer H.264 (avc1) so all browsers play the file inline. Fall back to
+    # mp4v only if the cv2 build has no H.264 encoder (browsers won't play it,
+    # but at least the file will be produced and downloadable).
+    writer = None
+    for fourcc_name in ("avc1", "H264", "mp4v"):
+        fourcc = cv2.VideoWriter_fourcc(*fourcc_name)
+        candidate = cv2.VideoWriter(str(dst), fourcc, fps, (width, height))
+        if candidate.isOpened():
+            writer = candidate
+            log.info("VideoWriter using fourcc=%s", fourcc_name)
+            break
+        candidate.release()
+    if writer is None:
         cap.release()
-        raise RuntimeError(f"Could not open writer for {dst}")
+        raise RuntimeError(f"Could not open any VideoWriter for {dst}")
 
     last_results_per_model: list[list] = [[] for _ in models]
     frame_idx = 0
