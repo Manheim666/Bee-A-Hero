@@ -28,10 +28,17 @@ class Settings(BaseSettings):
     # a mislabelled flower is a box that basically IS the flower (IoU ~1, similar area). So:
     #  * hold insects to a higher confidence bar than flowers, and
     #  * veto any insect box that overlaps a flower too much / is nearly the flower's size.
-    insect_conf: float = 0.45           # min confidence for an insect box (stricter than flowers)
-    flower_conf: float = 0.35           # min confidence for a flower box
+    insect_conf: float = 0.30           # min confidence for an insect box (low -> detect a settled
+                                        #   bee immediately instead of a couple seconds late)
+    flower_conf: float = 0.45           # min confidence for a flower box (higher -> fewer scene FPs)
     insect_flower_iou: float = 0.80     # insect box matching a flower this closely = the whole
                                         #   flower mislabelled; kept high so bees ON a flower survive
+    # flower geometry: a real flower is compact and only part of the frame — not the whole scene.
+    flower_min_frac: float = 0.002      # reject flower boxes smaller than this fraction of the frame
+    flower_max_frac: float = 0.55       # reject flower boxes bigger than this (whole-screen = FP)
+    flower_max_aspect: float = 3.0      # reject long slivers (aspect above this) -> not a flower
+    box_nms_iou: float = 0.55           # merge overlapping same-kind boxes ("flower in a flower")
+    box_nms_contain: float = 0.70       # or one box mostly inside another -> keep the stronger
 
     # --- live landing logging (rolling CSV/JSON for the ML phase) ------------------
     # When a flower model and an insect model are both loaded, track insects, associate
