@@ -3,10 +3,19 @@ import { useAuth } from "../auth/AuthContext.jsx";
 import Hexagon from "./Hexagon.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 
-const linkStyle = ({ isActive }) => ({
+const PILL = {
   padding: "8px 14px",
   borderRadius: 999,
   fontWeight: 600,
+  whiteSpace: "nowrap",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  transition: "background 0.15s ease, color 0.15s ease",
+};
+
+const linkStyle = ({ isActive }) => ({
+  ...PILL,
   color: isActive ? "#fff" : "var(--charcoal)",
   background: isActive
     ? "linear-gradient(135deg, var(--honey), var(--honey-deep))"
@@ -35,18 +44,29 @@ export default function NavBar() {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 14,
+          justifyContent: "space-between",
+          gap: 16,
           paddingTop: 12,
           paddingBottom: 12,
           flexWrap: "wrap",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {/* Left: brand */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <Hexagon size={38}>🐝</Hexagon>
           <strong style={{ fontSize: "1.15rem" }}>Bee-A-Hero</strong>
         </div>
 
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {/* Center: primary tabs */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
           <NavLink to="/dashboard" style={linkStyle}>
             Dashboard
           </NavLink>
@@ -63,32 +83,31 @@ export default function NavBar() {
             href="http://localhost:8001/"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              padding: "8px 14px",
-              borderRadius: 999,
-              fontWeight: 600,
-              color: "var(--charcoal)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-            }}
+            style={{ ...PILL, color: "var(--charcoal)", border: "1px solid var(--border)" }}
             title="Open the DroidCam live detection viewer"
           >
             📷 Live Camera
           </a>
         </div>
 
+        {/* Right: session actions */}
         <div
           style={{
-            marginLeft: "auto",
             display: "flex",
             alignItems: "center",
             gap: 12,
+            flexShrink: 0,
           }}
         >
           <ThemeToggle />
-          <span className="pill pill-done">{user?.username}</span>
-          <button className="btn btn-ghost" onClick={handleLogout}>
+          <span className="pill pill-done" style={{ whiteSpace: "nowrap" }}>
+            {user?.username}
+          </span>
+          <button
+            className="btn btn-ghost"
+            style={{ whiteSpace: "nowrap" }}
+            onClick={handleLogout}
+          >
             Logout
           </button>
         </div>

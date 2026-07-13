@@ -24,8 +24,24 @@ export default function Dashboard() {
   return (
     <div className="container">
       <div className="honeycomb-header">
+        <span className="hc-corner tl" />
+        <span className="hc-corner tr" />
+        <span className="hc-corner bl" />
+        <span className="hc-corner br" />
+        <div
+          className="mono"
+          style={{
+            fontSize: "0.72rem",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "var(--nectar-deep)",
+            marginBottom: 8,
+          }}
+        >
+          ● Pollination monitor · live
+        </div>
         <h1>Welcome back, {user?.username} 🐝</h1>
-        <p className="muted">
+        <p className="muted" style={{ maxWidth: 560 }}>
           Your pollination dashboard — detections, visit stats, and the
           assistant, all in one place.
         </p>
