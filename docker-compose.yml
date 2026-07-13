@@ -1,0 +1,60 @@
+# Bee-A-Hero — one-command unifier for all three services.
+#   docker compose up --build
+#     frontend  -> http://localhost:5173   (React UI)
+#     backend   -> http://localhost:8000   (FastAPI: upload + real CV pipeline + LLM)
+#     droidcam  -> http://localhost:8001   (live DroidCam YOLO viewer, human-veto on)
+#
+# Trained weights (gitignored, ~100s of MB) are MOUNTED read-only from the host repo,
+# never baked into images. GPU is optional — see the commented `deploy` blocks.
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - bee-a-hero-app/backend/.env        # GEMINI_API_KEY etc. (create from your keys)
+    volumes:
+      - ./data/interim/cv_runs:/app/data/interim/cv_runs:ro   # flower/insect/honeybee weights
+      - ./test_video_result:/app/test_video_result:ro         # LLM grounding CSVs
+      - ./models:/app/models:ro                               # yield_report.json
+      - backend_uploads:/app/bee-a-hero-app/backend/uploads
+    restart: unless-stopped
+    # GPU (optional): uncomment + install nvidia-container-toolkit
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        VITE_API_URL: "http://localhost:8000"   # browser calls the backend at this public url
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  droidcam:
+    build:
+      context: ./droidcam-live
+      dockerfile: ../docker/droidcam.Dockerfile
+    ports:
+      - "8001:8001"    # matches start.sh + NavBar "Live Camera" link + README
+    environment:
+      DROIDCAM_URL: "${DROIDCAM_URL:-http://192.168.1.100:4747/video}"  # your phone's stream
+      MODEL_PATHS: "/weights/flower_det2_v2_yolo26m/weights/best.pt,/weights/insect_multidet_v2_yolo26m/weights/best.pt"
+      MODEL_LABELS: "flower,insect"
+      PERSON_VETO: "true"
+      CONF_THRESHOLD: "0.35"
+    volumes:
+      - ./data/interim/cv_runs:/weights:ro
+    restart: unless-stopped
+
+volumes:
+  backend_uploads:
