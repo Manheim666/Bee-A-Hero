@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import hashlib
 import random
+import shutil
 import sys
 from pathlib import Path
 
@@ -71,10 +72,21 @@ def _run_real(video_path: str) -> dict:
 
     rows: list[dict] = []
     honeybee = str(_HONEYBEE_W) if _HONEYBEE_W.exists() else ""
+    # save_video=True -> the tracked pipeline writes the annotated mp4 itself, so the
+    # website preview shows the *exact* boxes/IDs/counts as test_video_result (one source
+    # of truth). Move it next to the upload where the player streams it from.
     summary = count_visits_det(
         str(video_path), str(_FLOWER_W), str(_INSECT_W), _CV_OUT,
-        honeybee_weights=honeybee, on_landing=rows.append,
+        honeybee_weights=honeybee, on_landing=rows.append, save_video=True,
     )
+    try:
+        vp = Path(video_path)
+        src_annot = _CV_OUT / "videos" / f"{vp.stem}_annotated.mp4"
+        if src_annot.exists() and src_annot.stat().st_size > 0:
+            dst_annot = vp.with_name(f"annotated_{vp.stem}.mp4")
+            shutil.move(str(src_annot), str(dst_annot))
+    except Exception as e:  # annotation is a preview nicety -> never fail the run over it
+        print(f"[detector] could not place annotated preview: {type(e).__name__}: {e}")
 
     # keep only real landings, map string flower ids -> stable ints for the DB
     flower_ix: dict[str, int] = {}

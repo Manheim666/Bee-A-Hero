@@ -1,22 +1,43 @@
 """Flower-visit counting on video by **detection + tracking** (bbox, no segmentation).
 
-Single real-time camera stream, resampled to a fixed **24 fps**. Per frame:
+Single real-time camera stream, resampled to a fixed **20 fps**. Pipeline is **two-pass**
+so a momentary detector drop-out never becomes a phantom visit and the drawn box glides
+smoothly across the gap instead of blinking or snapping:
 
+  Pass 1 (track + collect)
+  ------------------------
   1. Flowers: per-frame YOLO detection with stable IDs (``FlowerTracker``) -> a
      **separate** box per flower (never unified).
   2. Insects: multi-class YOLO26 detector (``bee, fly, beetle, bug, butterfly``)
-     + BoT-SORT -> one **track ID + type** per insect. Each insect keeps its own
-     colour (by track ID) so bee #1 and bee #2 are distinct.
-  3. Type: taken directly from the detector, **confidence-weighted cumulative vote over
-     the track's life** for stability (no separate classifier). The on-screen label adds
-     hysteresis (a challenger must clearly out-weigh the current label to switch), so a
-     brief mislabel -- e.g. bee flickering to fly for a few frames -- does not flip it.
-  4. Landing: a contiguous span where an insect is on a flower -- either its box centre
-     is inside a flower ROI (detected) **or** it is near-motionless with no ROI (inferred,
-     stationary formula, catches undetected flowers). Enter/exit/duration are recorded;
-     ``landing_s >= MIN_LAND_S`` (2s) = a *real* landing (feeding, not a fly-through).
-     A fly-off + return **is** a new landing. Honeybees are split from other bees when a
-     subclassifier is supplied (honeybee weighted ~10x for pollination value).
+     + BoT-SORT -> one **raw track ID + type** per insect per detected frame. Nothing is
+     drawn or counted yet -- every detection is just recorded (box, class, conf, frame idx).
+  3. Type votes: confidence-weighted cumulative vote per raw track. Honeybee-vs-bee crops
+     are scored by the optional subclassifier as they are seen.
+
+  Stitch + interpolate (offline, between passes)
+  ----------------------------------------------
+  4. **Stitch**: BoT-SORT loses/re-mints an ID whenever an insect is briefly occluded or the
+     detector blinks. Two raw tracks are merged into one *unified* track when the later one
+     starts within ``RELINK_MAX_S`` (~3 s) of the earlier one ending **and** its first centre
+     is within ``RELINK_RADIUS_K * sqrt(area)`` of where the earlier one vanished (the insect
+     did not really move -> same insect). This is what stops one visit being counted twice.
+  5. **Interpolate**: every gap inside a unified track is filled by linearly dragging the box
+     corner-to-corner from the vanish point to the reappear point -> the box glides across the
+     gap. A mild EMA damps butterfly wing-flap size swings.
+
+  Landings (on the stitched, gap-filled timeline)
+  -----------------------------------------------
+  6. A **landing episode** = a contiguous span where an insect is on a flower -- box centre
+     inside a flower ROI (detected) **or** near-motionless with no ROI (inferred, stationary
+     formula, catches undetected flowers). A bridged occlusion stays **one** episode (no more
+     phantom split). A real *fly-off* (the insect moves away and the track keeps moving, or it
+     returns later/elsewhere beyond the stitch window) is still a **new** landing.
+     ``landing_s >= MIN_LAND_S`` (2 s) = a *real* landing (feeding, not a fly-through).
+
+  Pass 2 (render, only with --save-video)
+  ---------------------------------------
+  7. Re-decode the video (no inference) and draw the interpolated unified boxes + IDs + live
+     counts + flower boxes. Written with a browser-playable H.264 codec when available.
 
 Outputs are grouped under ``test_video_result/``:
   * ``csv/<video>_landings.csv``        -> one row / landing episode (enter, exit, duration,
@@ -47,7 +68,7 @@ import cv2
 from src import config as C
 from src.cv_engine.visit_counter import FlowerTracker, Classifier, _center, _in
 
-TARGET_FPS = 24
+TARGET_FPS = 20          # resample rate; lower than source -> smoother tracks + cheaper
 POLLINATORS = {"honeybee", "bee", "butterfly", "fly"}   # rolled up in the CSV as "pollinator"
 
 # --- landing semantics --------------------------------------------------------
@@ -56,19 +77,29 @@ MIN_LAND_S = 2.0          # dwell >= this = a *real* landing (feeding); shorter 
 STATIONARY_TAU = 0.5      # normalised speed (insect-body-lengths/s) below which = settled
 LAND_GRACE_S = 0.5        # bridge tracker flicker / brief exits inside one landing episode
 LABEL_SWITCH_MARGIN = 1.5 # displayed label only switches when the leader's cumulative vote
-                          #   weight is >= this * the current label's -> kills brief flips
-INSECT_BOX_SMOOTH = 0.5   # EMA on the drawn insect box -> damps butterfly wing-flap size swings
-INSECT_BOX_RESET = 1.5    # if a track's new box centre jumps > this * its box diagonal (an ID
-                          #   swap when two insects cross), snap instead of EMA-blending the two
-                          #   -> kills the "unified" box that used to span both insects
-INSECT_HOLD_MAX = 18      # keep drawing a lost insect box up to ~0.75s (24fps) so it doesn't blink
-                          #   but doesn't linger after the insect has gone; stops at the frame edge
-INSECT_EDGE_FRAC = 0.04   # box within 4% of any frame border -> treat as left-frame, stop holding
-MIN_TRACK_DRAW = 3        # a track must be detected in >= this many frames before its box is drawn
-                          #   -> a 1-2 frame false blip (e.g. flower momentarily read as bee) never shows
+                          #   weight is >= this * the runner-up's -> kills brief flips
+
+# --- track stitching (kills phantom double-counts across detector drop-outs) ---
+RELINK_MAX_S = 3.0        # a track that reappears within this many seconds of vanishing ...
+RELINK_RADIUS_K = 3.0     #   ... and within RELINK_RADIUS_K * sqrt(area) of the vanish point is
+                          #   the SAME insect (occlusion / detector blink), not a new one. Merge
+                          #   the two raw tracks -> one unified track, one visit, box interpolated
+                          #   across the gap. A real fly-off returns far / late -> stays separate.
+
+# --- drawing ------------------------------------------------------------------
+INSECT_BOX_SMOOTH = 0.6   # EMA on the drawn (interpolated) box -> damps wing-flap size swings
+MIN_TRACK_DRAW = 3        # a unified track needs >= this many *detected* frames before it is
+                          #   drawn or counted -> a 1-2 frame false blip never shows or scores
 MAX_INSECT_FRAME_FRAC = 0.18  # reject any insect box bigger than this fraction of the frame: a real
                           #   insect is small; a flower-sized box (whole flower read as fly) is a
                           #   false positive -> drop it from tracking, drawing and landings entirely
+INSECT_FLOWER_IOU = 0.80  # an insect box matching a flower box this closely IS the flower (the whole
+                          #   flower mislabelled as one insect). Kept high on purpose: several bees
+                          #   covering much of a flower each have IoU < this, so they are NOT vetoed.
+INSECT_MAX_ASPECT = 4.0   # insect box longer:shorter side above this = a sliver/edge, not an insect
+FLOWER_MAX_ASPECT = 3.0   # flower box aspect above this = a sliver/random object, not a flower
+MIN_BOX_FRAC = 0.0004     # any box smaller than this fraction of the frame = noise -> reject
+MAX_FLOWER_FRAC = 0.90    # a flower filling ~the whole frame is background, not a flower -> reject
 UNK_FLOWER_RADIUS = 2.0   # * sqrt(insect_area): attribute an inferred landing to a flower within,
                           #   else mint a synthetic flower_unk_N at that spot
 SCORE_CAP_S = 30.0        # cap one landing's duration contribution to the pollination score
@@ -83,13 +114,6 @@ def _color(tid: int):
     h = (tid * 0.61803398875) % 1.0
     r, g, b = colorsys.hsv_to_rgb(h, 0.85, 1.0)
     return int(b * 255), int(g * 255), int(r * 255)
-
-
-def _at_edge(box, W, H, frac):
-    """True if the box hugs a frame border -> the insect has likely left the view."""
-    m = frac * max(W, H)
-    x1, y1, x2, y2 = box
-    return x1 <= m or y1 <= m or x2 >= W - m or y2 >= H - m
 
 
 def _speed_norm(prev_c, prev_t, c, t, area):
@@ -124,16 +148,214 @@ def _attribute_flower(c, area, flowers, unk_reg, next_unk):
     return uid, next_unk + 1
 
 
+def _box_area(box):
+    return max(1.0, (box[2] - box[0]) * (box[3] - box[1]))
+
+
+def _aspect(box):
+    w = max(1.0, box[2] - box[0])
+    h = max(1.0, box[3] - box[1])
+    return max(w / h, h / w)
+
+
+def _plausible_insect(box):
+    """Geometric sanity: an insect box is not an extreme sliver (edge/artefact)."""
+    return _aspect(box) <= INSECT_MAX_ASPECT
+
+
+def _plausible_flower(box, frame_area):
+    """Geometric sanity for a flower box: roughly compact, not noise, not the whole frame."""
+    a = _box_area(box)
+    return MIN_BOX_FRAC * frame_area <= a <= MAX_FLOWER_FRAC * frame_area and _aspect(box) <= FLOWER_MAX_ASPECT
+
+
+def _is_flower_box(ibox, flowers):
+    """True if an insect box is really a flower (high IoU / near flower size with overlap).
+
+    A genuine insect sitting on a flower is a small box inside it -> low IoU -> passes.
+    NOTE: the area-based branch is intentionally conservative (needs high IoU too) so two
+    bees covering much of one flower are NOT mistaken for the flower itself."""
+    ia = _box_area(ibox)
+    for _fid, fb in flowers:
+        fa = _box_area(fb)
+        ox1, oy1 = max(ibox[0], fb[0]), max(ibox[1], fb[1])
+        ox2, oy2 = min(ibox[2], fb[2]), min(ibox[3], fb[3])
+        inter = max(0.0, ox2 - ox1) * max(0.0, oy2 - oy1)
+        if inter <= 0:
+            continue
+        if inter / (ia + fa - inter) >= INSECT_FLOWER_IOU:
+            return True                              # box ~ the whole flower, not an insect on it
+    return False
+
+
+def _dedup_insects(cands):
+    """Drop duplicate/nested insect boxes on the same bug (an "insect inside an insect").
+
+    ``cands``: [(tid, box, conf, cls_name)]. Class-aware NMS keeps a bee-box and an overlapping
+    butterfly-box on one insect; this class-agnostic pass keeps only the highest-confidence of
+    any heavily-overlapping / contained set. Returns the kept items in original order."""
+    order = sorted(range(len(cands)), key=lambda i: cands[i][2], reverse=True)
+    kept_boxes, keep = [], []
+    for i in order:
+        box = cands[i][1]
+        ia = _box_area(box)
+        drop = False
+        for kb in kept_boxes:
+            ox1, oy1 = max(box[0], kb[0]), max(box[1], kb[1])
+            ox2, oy2 = min(box[2], kb[2]), min(box[3], kb[3])
+            inter = max(0.0, ox2 - ox1) * max(0.0, oy2 - oy1)
+            if inter <= 0:
+                continue
+            ka = _box_area(kb)
+            if inter / (ia + ka - inter) >= 0.6 or inter / min(ia, ka) >= 0.75:
+                drop = True
+                break
+        if not drop:
+            kept_boxes.append(box)
+            keep.append(i)
+    return [cands[i] for i in sorted(keep)]
+
+
+def _lerp_box(a, b, w):
+    """Linear blend of two boxes, w in [0,1] (0 -> a, 1 -> b)."""
+    return tuple(a[i] * (1 - w) + b[i] * w for i in range(4))
+
+
+def _to_browser_mp4(src: Path, dst: Path) -> bool:
+    """Transcode to H.264 + yuv420p + faststart so browsers can play the <video>.
+
+    OpenCV's bundled FFMPEG often lacks an H.264 encoder (writes only mp4v, which Chrome
+    won't play), so we render with mp4v then re-encode with the system ffmpeg if present.
+    Returns True on success; on any failure the caller keeps the mp4v file.
+    """
+    import shutil
+    import subprocess
+    if shutil.which("ffmpeg") is None:
+        return False
+    try:
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", str(src), "-c:v", "libx264", "-pix_fmt", "yuv420p",
+             # libx264 + yuv420p needs EVEN width/height; force it so odd-sized clips
+             # (e.g. many "_medium" videos) still transcode instead of falling back to mp4v.
+             "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+             "-movflags", "+faststart", "-loglevel", "error", str(dst)],
+            check=True,
+        )
+        return dst.exists() and dst.stat().st_size > 0
+    except Exception:
+        return False
+
+
+def _stitch_tracks(raw_tracks, out_fps):
+    """Merge raw BoT-SORT tracks that a drop-out split into one *unified* track.
+
+    ``raw_tracks``: {raw_tid: {"det": {fi: (box, conf, cls_name)}, "bee": Counter}}.
+    Greedy chaining by end-time then start-time: a later track chains onto an earlier one
+    when it starts within ``RELINK_MAX_S`` of the earlier ending AND its first centre is
+    within ``RELINK_RADIUS_K * sqrt(area)`` of the earlier one's last centre. Returns a list
+    of unified tracks, each a merged dict of the same shape (dets keyed by frame index).
+    """
+    max_gap = RELINK_MAX_S * out_fps
+    # summarise each raw track by its first/last detected frame, centre and size
+    info = {}
+    for rid, tr in raw_tracks.items():
+        fis = sorted(tr["det"])
+        if not fis:
+            continue
+        f0, f1 = fis[0], fis[-1]
+        b0, b1 = tr["det"][f0][0], tr["det"][f1][0]
+        info[rid] = {"f0": f0, "f1": f1, "c0": _center(b0), "c1": _center(b1),
+                     "area1": _box_area(b1)}
+    order = sorted(info, key=lambda r: info[r]["f0"])   # by start frame
+    parent = {r: r for r in order}
+
+    def find(r):
+        while parent[r] != r:
+            parent[r] = parent[parent[r]]
+            r = parent[r]
+        return r
+
+    # for each track, try to attach it to the best earlier track that just ended nearby
+    ends = sorted(order, key=lambda r: info[r]["f1"])   # by end frame
+    for later in order:
+        li = info[later]
+        best, best_gap = None, None
+        for earlier in ends:
+            if earlier == later:
+                continue
+            ei = info[earlier]
+            gap = li["f0"] - ei["f1"]
+            if gap < 0 or gap > max_gap:
+                continue
+            if find(earlier) == find(later):
+                continue
+            radius = RELINK_RADIUS_K * (max(ei["area1"], li["area1"]) ** 0.5)
+            d = ((li["c0"][0] - ei["c1"][0]) ** 2 + (li["c0"][1] - ei["c1"][1]) ** 2) ** 0.5
+            if d <= radius and (best_gap is None or gap < best_gap):
+                best, best_gap = earlier, gap
+        if best is not None:
+            parent[find(later)] = find(best)
+
+    groups: dict = defaultdict(list)
+    for r in order:
+        groups[find(r)].append(r)
+
+    unified = []
+    for members in groups.values():
+        det: dict = {}
+        bee = Counter()
+        votes = Counter()
+        for rid in members:
+            tr = raw_tracks[rid]
+            bee.update(tr["bee"])
+            for fi, (box, conf, cls_name) in tr["det"].items():
+                votes[cls_name] += float(conf)
+                if fi in det and det[fi][1] >= conf:
+                    continue                      # rare overlap in a chain -> keep higher-conf box
+                det[fi] = (box, conf, cls_name)
+        unified.append({"det": det, "bee": bee, "votes": votes})
+    return unified
+
+
+def _interpolate(det):
+    """Fill every gap between detected keyframes with linearly-dragged boxes.
+
+    ``det``: {fi: (box, conf, cls_name)}. Returns {fi: box} for every fi in [first, last],
+    lightly EMA-smoothed for draw stability. Detected frames keep near-exact boxes.
+    """
+    keys = sorted(det)
+    dense: dict = {}
+    for k0, k1 in zip(keys, keys[1:]):
+        b0, b1 = det[k0][0], det[k1][0]
+        span = k1 - k0
+        for fi in range(k0, k1):
+            dense[fi] = _lerp_box(b0, b1, (fi - k0) / span)
+    dense[keys[-1]] = det[keys[-1]][0]
+    # mild EMA over the dense sequence to damp wing-flap size swings
+    smooth: dict = {}
+    prev = None
+    for fi in range(keys[0], keys[-1] + 1):
+        box = dense[fi]
+        if prev is None:
+            prev = tuple(float(v) for v in box)
+        else:
+            prev = tuple(INSECT_BOX_SMOOTH * p + (1 - INSECT_BOX_SMOOTH) * v
+                         for p, v in zip(prev, box))
+        smooth[fi] = prev
+    return smooth
+
+
 def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
                      conf=0.25, flower_conf=0.15, save_video=False,
                      flower_interval=5, target_fps=TARGET_FPS,
                      honeybee_weights="", on_landing=None, live=False) -> dict:
     """Detect+track insects on flowers and emit landing-level pollination data.
 
-    A **landing episode** = a contiguous span where a tracked insect is either inside a
-    flower ROI (detected) *or* near-motionless with no ROI (inferred, stationary formula).
-    Brief drop-outs < LAND_GRACE_S are bridged; leaving then returning is a *new* landing.
-    Each episode yields enter/exit/duration; ``landing_s >= MIN_LAND_S`` marks a real landing.
+    Two-pass: track+collect, then stitch drop-out-split tracks into unified tracks (so one
+    occluded insect is one visit, not several), interpolate the box across every gap, and
+    derive landing episodes from that gap-filled timeline. A bridged occlusion is one episode;
+    a genuine fly-off + return (far / beyond RELINK_MAX_S) is a new episode. ``landing_s >=
+    MIN_LAND_S`` marks a real landing. Renders the annotated mp4 in a second decode pass.
     """
     from ultralytics import YOLO
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -146,149 +368,114 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
     in_fps = cv2.VideoCapture(str(video)).get(cv2.CAP_PROP_FPS) or 30.0
     stride = max(1, round(in_fps / target_fps))
     out_fps = in_fps / stride
-
-    votes: dict[int, Counter] = defaultdict(Counter)          # track -> conf-weighted type votes
-    disp: dict[int, str] = {}                                 # track -> sticky display label (hysteresis)
-    bee_votes: dict[int, Counter] = defaultdict(Counter)      # track -> honeybee/bee votes
-    st: dict[int, dict] = {}                                   # track -> dwell state
-    unk_reg: dict[str, tuple] = {}                            # synthetic flower id -> centre
-    next_unk = 1
-    landings: list[dict] = []
-    flower_count: dict[str, int] = defaultdict(int)           # fid -> real landings (live overlay)
-    ftracker = FlowerTracker(flower_model, flower_conf)
-    writer = None
-    t_s = 0.0
     vid_stem = Path(video).stem
 
-    def finalize(tid):
-        ep = st.get(tid, {}).get("ep")
-        if not ep:
-            return
-        landing_s = round(ep["last_t"] - ep["enter_t"], 2)
-        typ = votes[tid].most_common(1)[0][0] if votes[tid] else "insect"
-        is_hb = ""                                             # "" = unknown (no subclassifier)
-        if typ == "bee":
-            if bee_votes[tid]:
-                is_hb = bee_votes[tid].most_common(1)[0][0] == "honeybee"
-                if is_hb:
-                    typ = "honeybee"
-        else:
-            is_hb = False
-        real = int(landing_s >= MIN_LAND_S)
-        if real:
-            flower_count[ep["flower"]] += 1
-        # live cameras record the wall-clock exit time so daily counts can bucket by date;
-        # test videos leave it blank (they have no real calendar time).
-        ts = datetime.now().isoformat(timespec="seconds") if live else ""
-        row = {
-            "video": vid_stem, "flower_id": ep["flower"], "flower_species": "",
-            "track_id": tid, "insect_type": typ, "is_honeybee": is_hb,
-            "t_enter_s": round(ep["enter_t"], 2), "t_exit_s": round(ep["last_t"], 2),
-            "landing_s": landing_s, "is_real_landing": real,
-            "flower_detected": ep["detected"], "timestamp": ts,
-            "pollination_weight": SPECIES_WEIGHT.get(typ, DEFAULT_WEIGHT),
-            "conf_mean": round(ep["conf_sum"] / max(1, ep["conf_n"]), 3),
-        }
-        landings.append(row)
-        if on_landing is not None:               # live sink: emit each landing as it completes
-            on_landing(row)
-        st[tid]["ep"] = None
+    ftracker = FlowerTracker(flower_model, flower_conf)
+    unk_reg: dict[str, tuple] = {}                            # synthetic flower id -> centre
+    next_unk = 1
 
+    # ---- Pass 1: track + collect (draw nothing, count nothing yet) --------------
+    raw_tracks: dict[int, dict] = defaultdict(lambda: {"det": {}, "bee": Counter()})
+    flowers_by_fi: dict[int, list] = {}                      # fi -> [(fid, box)] snapshot
+    n_frames = 0
     stream = insect_model.track(source=video, stream=True, tracker="botsort.yaml",
                                 persist=True, conf=conf, verbose=False, vid_stride=stride)
     for fi, res in enumerate(stream):
         frame = res.orig_img
         H, W = frame.shape[:2]
-        t_s = round(fi * stride / in_fps, 2)
         flowers = ftracker.update(frame) if fi % flower_interval == 0 else ftracker.current()
-        if fi == 0 and save_video:
-            writer = cv2.VideoWriter(str(vid_dir / (vid_stem + "_annotated.mp4")),
-                                     cv2.VideoWriter_fourcc(*"mp4v"), out_fps, (W, H))
-        drawn = []
-        present = set()
+        flowers = [(fid, fb) for fid, fb in flowers if _plausible_flower(fb, W * H)]
+        flowers_by_fi[fi] = list(flowers)
+        n_frames = fi + 1
         b = res.boxes
-        if b is not None and b.id is not None:
-            ids = b.id.int().cpu().tolist()
-            xyxy = b.xyxy.cpu().numpy()
-            cls = b.cls.int().cpu().tolist()
-            confs = b.conf.cpu().numpy() if b.conf is not None else [0.0] * len(ids)
-            for tid, box, c_id, cf in zip(ids, xyxy, cls, confs):
-                if (box[2] - box[0]) * (box[3] - box[1]) > MAX_INSECT_FRAME_FRAC * W * H:
-                    continue                                   # box too big to be an insect -> flower/bg FP
-                present.add(tid)
-                votes[tid][names[c_id]] += float(cf)           # confidence-weighted cumulative vote
-                lead = votes[tid].most_common(1)[0][0]         # current top type by cumulative weight
-                cur_lab = disp.get(tid)
-                if cur_lab is None or (lead != cur_lab and
-                        votes[tid][lead] >= votes[tid][cur_lab] * LABEL_SWITCH_MARGIN):
-                    disp[tid] = lead                           # switch only on a clear margin (hysteresis)
-                typ = disp[tid]
-                if subclf is not None and typ == "bee":        # honeybee vs other-bee vote
-                    x1, y1, x2, y2 = map(int, box)
-                    bee_votes[tid][subclf.predict(frame[y1:y2, x1:x2])] += 1
-                cen = _center(box)
-                area = max(1.0, (box[2] - box[0]) * (box[3] - box[1]))
-                sub = st.setdefault(tid, {"prev_c": cen, "prev_t": t_s, "ep": None,
-                                          "n": 0, "dbox": None, "miss": 0, "dtyp": typ})
-                sub["n"] += 1                                  # frames this track was actually detected
-                s_norm = _speed_norm(sub["prev_c"], sub["prev_t"], cen, t_s, area)
-                sub["prev_c"], sub["prev_t"] = cen, t_s
-                cur = next((fid for fid, fb in flowers if _in(fb, cen)), None)
-                settled = cur is not None or s_norm < STATIONARY_TAU
-                if settled:
-                    if cur is not None:
-                        fid_use, det = cur, "detected"
-                    else:                                       # inferred: stationary, no ROI
-                        fid_use, next_unk = _attribute_flower(cen, area, flowers, unk_reg, next_unk)
-                        det = "inferred"
-                    ep = sub["ep"]
-                    if ep is None:
-                        sub["ep"] = {"flower": fid_use, "enter_t": t_s, "last_t": t_s,
-                                     "detected": det, "conf_sum": float(cf), "conf_n": 1}
-                    else:
-                        ep["last_t"] = t_s
-                        ep["conf_sum"] += float(cf); ep["conf_n"] += 1
-                        if det == "detected" and ep["detected"] == "inferred":
-                            ep["detected"] = "detected"; ep["flower"] = fid_use
+        if b is None or b.id is None:
+            continue
+        ids = b.id.int().cpu().tolist()
+        xyxy = b.xyxy.cpu().numpy()
+        cls = b.cls.int().cpu().tolist()
+        confs = b.conf.cpu().numpy() if b.conf is not None else [0.0] * len(ids)
+        cands = []
+        for tid, box, c_id, cf in zip(ids, xyxy, cls, confs):
+            if (box[2] - box[0]) * (box[3] - box[1]) > MAX_INSECT_FRAME_FRAC * W * H:
+                continue                                       # box too big to be an insect -> FP
+            box = tuple(float(v) for v in box)
+            if _is_flower_box(box, flowers):
+                continue                                       # a flower mislabelled as an insect
+            if not _plausible_insect(box):
+                continue                                       # implausible shape -> not an insect
+            cands.append((tid, box, float(cf), names[c_id]))
+        # drop duplicate/nested boxes on one bug (an "insect inside an insect")
+        for tid, box, cf, cls_name in _dedup_insects(cands):
+            raw_tracks[tid]["det"][fi] = (box, cf, cls_name)
+            if subclf is not None and cls_name == "bee":       # honeybee vs other-bee vote
+                x1, y1, x2, y2 = map(int, box)
+                raw_tracks[tid]["bee"][subclf.predict(frame[y1:y2, x1:x2])] += 1
+
+    # ---- Stitch raw tracks split by drop-outs into unified tracks ---------------
+    unified = _stitch_tracks(raw_tracks, out_fps)
+
+    # ---- Derive landing episodes per unified track on the gap-filled timeline ---
+    landings: list[dict] = []
+    flower_events: list[tuple] = []            # (exit_fi, flower_id) for real landings -> live overlay
+    draw_tracks: list[dict] = []               # per unified track: {uid, typ, boxes:{fi:box}}
+    uid_seq = 0
+    for u in unified:
+        det = u["det"]
+        if len(det) < MIN_TRACK_DRAW:          # persistence gate: drop transient false blips
+            continue
+        uid_seq += 1
+        uid = uid_seq
+        dense = _interpolate(det)              # {fi: box} across [first, last]
+        typ = u["votes"].most_common(1)[0][0] if u["votes"] else "insect"
+        is_hb = ""
+        if typ == "bee" and u["bee"]:
+            is_hb = u["bee"].most_common(1)[0][0] == "honeybee"
+            if is_hb:
+                typ = "honeybee"
+        elif typ != "bee":
+            is_hb = False
+        draw_tracks.append({"uid": uid, "typ": typ, "boxes": dense})
+
+        fis = sorted(dense)
+        ep = None
+        prev_c, prev_t = None, None
+        for fi in fis:
+            box = dense[fi]
+            cen = _center(box)
+            area = _box_area(box)
+            t_s = round(fi * stride / in_fps, 2)
+            flowers = flowers_by_fi.get(fi, [])
+            s_norm = 0.0 if prev_c is None else _speed_norm(prev_c, prev_t, cen, t_s, area)
+            prev_c, prev_t = cen, t_s
+            cur = next((fid for fid, fb in flowers if _in(fb, cen)), None)
+            settled = cur is not None or s_norm < STATIONARY_TAU
+            conf_here = det.get(fi, (None, 0.0, None))[1]
+            if settled:
+                if cur is not None:
+                    fid_use, det_kind = cur, "detected"
                 else:
-                    ep = sub["ep"]
-                    if ep is not None and t_s - ep["last_t"] > LAND_GRACE_S:
-                        finalize(tid)
-                # EMA-smooth the drawn box (damps butterfly wing-flap size swings), reset hold.
-                # On a big centre jump (BoT-SORT ID swap when two insects cross) snap to the new
-                # box instead of blending -> no "unified" box spanning both insects.
-                if sub["dbox"] is None:
-                    sub["dbox"] = tuple(float(v) for v in box)
+                    fid_use, next_unk = _attribute_flower(cen, area, flowers, unk_reg, next_unk)
+                    det_kind = "inferred"
+                if ep is None:
+                    ep = {"flower": fid_use, "enter_t": t_s, "last_t": t_s,
+                          "detected": det_kind, "conf_sum": conf_here, "conf_n": 1,
+                          "last_fi": fi}
                 else:
-                    ocx, ocy = (sub["dbox"][0] + sub["dbox"][2]) / 2, (sub["dbox"][1] + sub["dbox"][3]) / 2
-                    diag = ((box[2] - box[0]) ** 2 + (box[3] - box[1]) ** 2) ** 0.5
-                    if ((cen[0] - ocx) ** 2 + (cen[1] - ocy) ** 2) ** 0.5 > INSECT_BOX_RESET * diag:
-                        sub["dbox"] = tuple(float(v) for v in box)
-                    else:
-                        sub["dbox"] = tuple(INSECT_BOX_SMOOTH * o + (1 - INSECT_BOX_SMOOTH) * v
-                                            for o, v in zip(sub["dbox"], box))
-                sub["dtyp"], sub["miss"] = typ, 0
-                if sub["n"] >= MIN_TRACK_DRAW:                 # persistence gate: skip transient false blips
-                    drawn.append((tid, sub["dbox"], typ))
-        # tracks that vanished this frame: finalize once past the grace window
-        for tid, sub in list(st.items()):
-            ep = sub.get("ep")
-            if tid not in present and ep is not None and t_s - ep["last_t"] > LAND_GRACE_S:
-                finalize(tid)
-        # brief/long drop-out: keep drawing the last insect box until it leaves the frame or the
-        # hold cap is hit -> box stays put instead of blinking/vanishing mid-scene
-        for tid, sub in st.items():
-            if (tid not in present and sub.get("dbox") is not None
-                    and sub["n"] >= MIN_TRACK_DRAW and sub["miss"] < INSECT_HOLD_MAX
-                    and not _at_edge(sub["dbox"], W, H, INSECT_EDGE_FRAC)):
-                sub["miss"] += 1
-                drawn.append((tid, sub["dbox"], sub["dtyp"]))
-        if writer is not None:
-            writer.write(_annotate(frame, flowers, drawn, flower_count))
-    for tid in list(st.keys()):
-        finalize(tid)
-    if writer is not None:
-        writer.release()
+                    ep["last_t"] = t_s; ep["last_fi"] = fi
+                    ep["conf_sum"] += conf_here; ep["conf_n"] += 1
+                    if det_kind == "detected" and ep["detected"] == "inferred":
+                        ep["detected"] = "detected"; ep["flower"] = fid_use
+            else:
+                if ep is not None and t_s - ep["last_t"] > LAND_GRACE_S:
+                    _emit_landing(landings, flower_events, ep, uid, typ, is_hb, live, on_landing, vid_stem)
+                    ep = None
+        if ep is not None:
+            _emit_landing(landings, flower_events, ep, uid, typ, is_hb, live, on_landing, vid_stem)
+
+    # ---- Pass 2: render annotated mp4 (no inference, just decode + draw) ---------
+    if save_video and n_frames:
+        _render(video, vid_dir / (vid_stem + "_annotated.mp4"), stride, out_fps,
+                flowers_by_fi, draw_tracks, flower_events)
 
     # -- landings.csv : one row per landing episode -------------------------------
     land_fields = ["video", "flower_id", "flower_species", "track_id", "insect_type",
@@ -334,6 +521,71 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
             "landings_csv": str(land_path), "summary_csv": str(summ_path)}
 
 
+def _emit_landing(landings, flower_events, ep, uid, typ, is_hb, live, on_landing, vid_stem):
+    """Close one landing episode: build its CSV row, record the real-landing event, sink it."""
+    landing_s = round(ep["last_t"] - ep["enter_t"], 2)
+    real = int(landing_s >= MIN_LAND_S)
+    if real:
+        flower_events.append((ep["last_fi"], ep["flower"]))
+    ts = datetime.now().isoformat(timespec="seconds") if live else ""
+    row = {
+        "video": vid_stem, "flower_id": ep["flower"], "flower_species": "",
+        "track_id": uid, "insect_type": typ, "is_honeybee": is_hb,
+        "t_enter_s": round(ep["enter_t"], 2), "t_exit_s": round(ep["last_t"], 2),
+        "landing_s": landing_s, "is_real_landing": real,
+        "flower_detected": ep["detected"], "timestamp": ts,
+        "pollination_weight": SPECIES_WEIGHT.get(typ, DEFAULT_WEIGHT),
+        "conf_mean": round(ep["conf_sum"] / max(1, ep["conf_n"]), 3),
+    }
+    landings.append(row)
+    if on_landing is not None:
+        on_landing(row)
+
+
+def _render(video, out_path, stride, out_fps, flowers_by_fi, draw_tracks, flower_events):
+    """Second pass: decode the video again and draw the interpolated unified tracks.
+
+    No inference here -- just the precomputed per-frame boxes, so the drawn boxes glide across
+    every stitched gap. Live flower counts tick up at each real landing's exit frame.
+    """
+    # per-fi -> [(uid, box, typ)]
+    per_fi: dict[int, list] = defaultdict(list)
+    for tr in draw_tracks:
+        for fi, box in tr["boxes"].items():
+            per_fi[fi].append((tr["uid"], box, tr["typ"]))
+    events = sorted(flower_events)                          # (exit_fi, flower_id)
+
+    tmp_path = out_path.with_name(out_path.stem + "_mp4v.mp4")   # mp4v render, transcoded after
+    cap = cv2.VideoCapture(str(video))
+    writer = None
+    flower_count: dict[str, int] = defaultdict(int)
+    ev_i = 0
+    j = fi = 0
+    while True:
+        ok, frame = cap.read()
+        if not ok:
+            break
+        if j % stride == 0:                                # keep the same frames pass 1 sampled
+            H, W = frame.shape[:2]
+            if writer is None:
+                writer = cv2.VideoWriter(str(tmp_path), cv2.VideoWriter_fourcc(*"mp4v"),
+                                         out_fps, (W, H))
+            while ev_i < len(events) and events[ev_i][0] <= fi:
+                flower_count[events[ev_i][1]] += 1
+                ev_i += 1
+            writer.write(_annotate(frame, flowers_by_fi.get(fi, []), per_fi.get(fi, []), flower_count))
+            fi += 1
+        j += 1
+    cap.release()
+    if writer is not None:
+        writer.release()
+    # Re-encode to browser-playable H.264; if ffmpeg is absent, keep the mp4v as-is.
+    if tmp_path.exists() and _to_browser_mp4(tmp_path, out_path):
+        tmp_path.unlink(missing_ok=True)
+    elif tmp_path.exists():
+        tmp_path.replace(out_path)
+
+
 def aggregate_csvs(out_dir: Path) -> dict:
     """Merge every per-video CSV into two team-friendly tables for the ML/LLM phase:
 
@@ -362,11 +614,11 @@ def aggregate_csvs(out_dir: Path) -> dict:
 
 
 def _annotate(frame, flowers, drawn, flower_count):
-    for tid, box, typ in drawn:                                # per-insect box + id + type
+    for uid, box, typ in drawn:                                # per-insect box + id + type
         x1, y1, x2, y2 = map(int, box)
-        col = _color(tid)
+        col = _color(uid)
         cv2.rectangle(frame, (x1, y1), (x2, y2), col, 2)
-        cv2.putText(frame, f"{typ} #{tid}", (x1, max(12, y1 - 6)),
+        cv2.putText(frame, f"{typ} #{uid}", (x1, max(12, y1 - 6)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, col, 2)
     for fid, (x1, y1, x2, y2) in flowers:                      # separate box per flower
         cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 200, 0), 2)

@@ -153,7 +153,11 @@ export default function Upload() {
       ) : (
         <div
           className="grid"
-          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}
+          style={{
+            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+            gap: 16,
+            alignItems: "start",
+          }}
         >
           {videos.map((v) => (
             <VideoCard

@@ -1,10 +1,36 @@
+import { useEffect, useRef, useState } from "react";
 import Hexagon from "./Hexagon.jsx";
+import api from "../api";
 
 export default function VideoCard({ video, onDelete, onOpen }) {
   const r = video.result;
   const processing =
     video.status === "queued" || video.status === "processing";
   const canOpen = video.status === "done" && !!onOpen;
+
+  // Real still frame from the clip as the cover (upgrades to the boxed frame once the
+  // annotated video is ready), instead of a generic logo. Falls back to the emoji.
+  const [poster, setPoster] = useState(null);
+  const posterRef = useRef(null);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get(`/api/videos/${video.id}/poster`, { responseType: "blob" })
+      .then((res) => {
+        if (cancelled) return;
+        const url = URL.createObjectURL(res.data);
+        posterRef.current = url;
+        setPoster(url);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      if (posterRef.current) {
+        URL.revokeObjectURL(posterRef.current);
+        posterRef.current = null;
+      }
+    };
+  }, [video.id, video.status]);
 
   return (
     <div
@@ -31,18 +57,30 @@ export default function VideoCard({ video, onDelete, onOpen }) {
     >
       <div
         style={{
-          height: 120,
+          aspectRatio: "1 / 1",
+          width: "100%",
           borderRadius: 10,
-          background: "linear-gradient(135deg, var(--queued-bg), var(--amber-glow))",
+          background: poster
+            ? "#000"
+            : "linear-gradient(135deg, var(--queued-bg), var(--amber-glow))",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
+          overflow: "hidden",
         }}
       >
-        <Hexagon size={54} background="rgba(255,255,255,0.7)" color="var(--honey-deep)">
-          🎞️
-        </Hexagon>
+        {poster ? (
+          <img
+            src={poster}
+            alt={video.original_name}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        ) : (
+          <Hexagon size={54} background="rgba(255,255,255,0.7)" color="var(--honey-deep)">
+            🎞️
+          </Hexagon>
+        )}
         {canOpen && (
           <div
             style={{
