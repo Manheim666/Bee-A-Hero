@@ -1,6 +1,5 @@
 import json
 import mimetypes
-import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,9 +56,8 @@ def _process_video(video_id: int) -> None:
         video.status = VideoStatus.processing
         db.commit()
 
-        # Visible spinner -> done transition.
-        time.sleep(4)
-
+        # run_detection also writes the annotated preview (annotated_<stem>.mp4) so it is ready
+        # the moment status flips to done — the player streams it without a second annotation pass.
         summary = run_detection(video.stored_path)
 
         result = DetectionResult(
@@ -230,6 +228,44 @@ def stream_annotated_video(
             detail="Annotated video not ready yet",
         )
     return FileResponse(dst, media_type="video/mp4", filename=f"annotated_{video.original_name}")
+
+
+@router.get("/{video_id}/poster")
+def video_poster(
+    video_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """A real still frame from the video (the annotated one if ready, else raw) to use as
+    the card cover instead of a generic logo. Cached to disk; regenerated once the annotated
+    video appears so the cover upgrades from a raw frame to a boxed frame automatically."""
+    video = _owned_video(db, video_id, user)
+    stored = Path(video.stored_path)
+    if not stored.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Video file missing")
+    poster = stored.with_name(f"poster_{stored.stem}.jpg")
+    annotated = _annotated_path(video.stored_path)
+    has_annot = annotated.exists() and annotated.stat().st_size > 0
+    fresh = (
+        poster.exists()
+        and (not has_annot or poster.stat().st_mtime >= annotated.stat().st_mtime)
+    )
+    if not fresh:
+        import cv2  # heavy; import lazily so app startup stays light
+
+        src = annotated if has_annot else stored
+        cap = cv2.VideoCapture(str(src))
+        fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+        cap.set(cv2.CAP_PROP_POS_FRAMES, int(fps))  # ~1s in -> skips black lead-in
+        ok, frame = cap.read()
+        if not ok:  # short clip: fall back to the very first frame
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            ok, frame = cap.read()
+        cap.release()
+        if not ok:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No frame to read")
+        cv2.imwrite(str(poster), frame, [cv2.IMWRITE_JPEG_QUALITY, 82])
+    return FileResponse(poster, media_type="image/jpeg")
 
 
 @router.get("/{video_id}/stream")

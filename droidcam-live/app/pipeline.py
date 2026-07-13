@@ -14,6 +14,7 @@ import logging
 import threading
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
 import cv2
@@ -121,6 +122,29 @@ class Pipeline:
         self._models = []
         self._model_labels: list[str] = []
         self._person_model = None            # COCO detector for the human-veto (lazy)
+        # Live camera source, switchable at runtime from the browser (connect a phone via
+        # DroidCam without restarting the service). A bare int -> local webcam device.
+        self._source: str = settings.droidcam_url
+        self._source_lock = threading.Lock()
+        # Live landing logging (rolling CSV/JSON) when a flower + insect model are both loaded.
+        self._insect_idx: int | None = None
+        self._flower_idx: int | None = None
+        self._landing_logger = None
+
+    # --------------------------------------------------------------- source switch
+    def set_source(self, url: str) -> None:
+        """Point the capture thread at a new camera (phone DroidCam URL or webcam index)."""
+        with self._source_lock:
+            self._source = str(url).strip()
+        log.info("Camera source change requested: %s", url)
+
+    def get_source(self) -> str:
+        with self._source_lock:
+            return self._source
+
+    def _resolved_source(self):
+        url = self.get_source()
+        return int(url) if url.isdigit() else url
 
     # ------------------------------------------------------------------ setup
     def start(self) -> None:
@@ -169,17 +193,48 @@ class Pipeline:
                 log.warning("Person-veto model unavailable (%s); size-gate still active", exc)
                 self._person_model = None
 
+        # Enable live landing logging only when a flower model AND an insect model are present,
+        # matched by their MODEL_LABELS tags. Without both there is nothing to associate.
+        for idx, lbl in enumerate(self._model_labels):
+            if lbl == settings.insect_label:
+                self._insect_idx = idx
+            elif lbl == settings.flower_label:
+                self._flower_idx = idx
+        if settings.landing_log and self._insect_idx is not None and self._flower_idx is not None:
+            from .landings import LandingLogger
+            out_dir = Path(__file__).resolve().parent.parent / settings.live_out_dir
+            self._landing_logger = LandingLogger(
+                out_dir, settings.min_land_s, settings.land_grace_s, settings.stationary_tau)
+            log.info("Live landing logging ON -> %s (flower=model#%d, insect=model#%d)",
+                     out_dir, self._flower_idx, self._insect_idx)
+        else:
+            log.info("Live landing logging OFF (need both flower+insect models; "
+                     "labels=%s)", self._model_labels)
+
     # ------------------------------------------------------------------ capture
     def _capture_loop(self) -> None:
-        url = settings.droidcam_url
         # A bare integer (e.g. "0") means a LOCAL webcam device, not an http stream —
         # so "live camera" works with the machine's own camera when there's no phone.
-        source = int(url) if url.strip().isdigit() else url
+        # The source is switchable at runtime (set_source) so a phone can be connected
+        # via DroidCam from the browser without restarting the service.
+        source = self._resolved_source()
         cap: Optional[cv2.VideoCapture] = None
         frames = 0
         window_start = time.time()
 
         while not self._stop.is_set():
+            desired = self._resolved_source()
+            if desired != source:                # user switched cameras -> drop and reopen
+                log.info("Switching camera source %s -> %s", source, desired)
+                source = desired
+                if cap is not None:
+                    try:
+                        cap.release()
+                    except Exception:
+                        pass
+                cap = None
+                self.state.connected = False
+                self.state.reconnecting = True
             if cap is None or not cap.isOpened():
                 self.state.connected = False
                 self.state.reconnecting = True
@@ -286,6 +341,59 @@ class Pipeline:
         return boxes
 
     @staticmethod
+    def _dedup_insects(tracks: list) -> list:
+        """Drop a box that duplicates/nests inside a higher-confidence insect box.
+
+        The detector can box one bug twice (e.g. a `bee` box and an overlapping `butterfly`
+        box) -> "an insect inside an insect". Class-aware NMS keeps both; this class-agnostic
+        pass keeps only the highest-confidence box among heavily-overlapping/contained ones.
+        ``tracks``: [(tid, box, label, conf)]. Returns the kept subset in original order."""
+        order = sorted(range(len(tracks)), key=lambda i: tracks[i][3], reverse=True)
+        kept_boxes: list = []
+        keep_idx: list = []
+        for i in order:
+            box = tracks[i][1]
+            ia = max(1.0, (box[2] - box[0]) * (box[3] - box[1]))
+            drop = False
+            for kb in kept_boxes:
+                ox1, oy1 = max(box[0], kb[0]), max(box[1], kb[1])
+                ox2, oy2 = min(box[2], kb[2]), min(box[3], kb[3])
+                inter = max(0.0, ox2 - ox1) * max(0.0, oy2 - oy1)
+                if inter <= 0:
+                    continue
+                ka = max(1.0, (kb[2] - kb[0]) * (kb[3] - kb[1]))
+                iou = inter / (ia + ka - inter)
+                contain = inter / min(ia, ka)      # small box mostly inside the kept one
+                if iou >= 0.6 or contain >= 0.75:
+                    drop = True
+                    break
+            if not drop:
+                kept_boxes.append(box)
+                keep_idx.append(i)
+        return [tracks[i] for i in sorted(keep_idx)]
+
+    @staticmethod
+    def _is_flower_not_insect(box, flower_boxes) -> bool:
+        """True if `box` is really a flower the insect model mislabelled.
+
+        A real insect on a flower is a *small* box inside it: IoU(small, flower) is low and
+        its area is a small fraction of the flower's. A mislabelled flower is a box that
+        coincides with a flower: high IoU and near-equal area. Veto only the latter, so
+        genuine insects sitting on flowers are kept (their landings still count)."""
+        ix1, iy1, ix2, iy2 = box
+        ia = max(1.0, (ix2 - ix1) * (iy2 - iy1))
+        for fx1, fy1, fx2, fy2 in flower_boxes:
+            fa = max(1.0, (fx2 - fx1) * (fy2 - fy1))
+            ox1, oy1 = max(ix1, fx1), max(iy1, fy1)
+            ox2, oy2 = min(ix2, fx2), min(iy2, fy2)
+            inter = max(0.0, ox2 - ox1) * max(0.0, oy2 - oy1)
+            if inter <= 0:
+                continue
+            if inter / (ia + fa - inter) >= settings.insect_flower_iou:
+                return True                         # box ~ the whole flower, not an insect on it
+        return False
+
+    @staticmethod
     def _vetoed(box, persons, frame_area: float) -> bool:
         """True if `box` is too big to be a flower/insect, or its centre sits in a person."""
         x1, y1, x2, y2 = box
@@ -295,6 +403,8 @@ class Pipeline:
         return any(px1 <= cx <= px2 and py1 <= cy <= py2 for px1, py1, px2, py2 in persons)
 
     def _run_inference(self, frame: np.ndarray) -> tuple[np.ndarray, list[Detection]]:
+        if self._landing_logger is not None:
+            return self._run_inference_landing(frame)
         detections: list[Detection] = []
         annotated = frame.copy()
         h, w = frame.shape[:2]
@@ -332,6 +442,72 @@ class Pipeline:
         self._draw_hud(annotated)
         return annotated, detections
 
+    def _run_inference_landing(self, frame: np.ndarray) -> tuple[np.ndarray, list[Detection]]:
+        """Flower + insect models with insect tracking -> feed the landing logger, draw all."""
+        annotated = frame.copy()
+        h, w = frame.shape[:2]
+        frame_area = float(h * w)
+        persons = self._person_boxes(frame)
+        detections: list[Detection] = []
+
+        # Flowers (per-frame detection; stable ids are assigned by the logger).
+        flower_boxes: list = []
+        for r in self._models[self._flower_idx].predict(
+            frame, conf=settings.flower_conf, imgsz=settings.img_size, verbose=False
+        ):
+            if r.boxes is None:
+                continue
+            for box in r.boxes:
+                x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
+                if self._vetoed((x1, y1, x2, y2), persons, frame_area):
+                    continue
+                flower_boxes.append((x1, y1, x2, y2))
+
+        # Insects (tracked across frames so landings can span a whole dwell). Held to a higher
+        # confidence bar and vetoed when a box IS a flower (high IoU / near flower size) so a
+        # colourful flower is never kept as a "butterfly". Small insects sitting ON a flower
+        # (low IoU) still pass -> real landings survive.
+        insect_tracks: list = []
+        for r in self._models[self._insect_idx].track(
+            frame, persist=True, conf=settings.insect_conf, imgsz=settings.img_size,
+            tracker="botsort.yaml", verbose=False
+        ):
+            names = r.names
+            if r.boxes is None or r.boxes.id is None:
+                continue
+            ids = r.boxes.id.int().cpu().tolist()
+            for box, tid in zip(r.boxes, ids):
+                cls_id = int(box.cls.item())
+                conf = float(box.conf.item())
+                x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
+                if self._vetoed((x1, y1, x2, y2), persons, frame_area):
+                    continue
+                if self._is_flower_not_insect((x1, y1, x2, y2), flower_boxes):
+                    continue                       # this box is a flower mislabelled as an insect
+                label = names.get(cls_id, str(cls_id)) if isinstance(names, dict) else names[cls_id]
+                insect_tracks.append((tid, (x1, y1, x2, y2), label, conf))
+
+        # Drop duplicate/nested boxes on the same bug (an "insect inside an insect").
+        insect_tracks = self._dedup_insects(insect_tracks)
+
+        # Update landing episodes; get flowers back with sticky ids for drawing.
+        flowers = self._landing_logger.observe(insect_tracks, flower_boxes)
+
+        for fid, (x1, y1, x2, y2) in flowers:
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 200, 0), 2)
+            cv2.putText(annotated, str(fid), (x1, max(12, y1 - 6)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 200, 0), 2)
+            detections.append(Detection(label="flower", conf=1.0, box=(x1, y1, x2, y2),
+                                        model_label=settings.flower_label))
+        for tid, box, label, conf in insect_tracks:
+            det = Detection(label=f"{label} #{tid}", conf=conf, box=box,
+                            model_label=settings.insect_label)
+            self._draw(annotated, det, tid)    # colour by track id
+            detections.append(det)
+
+        self._draw_hud(annotated)
+        return annotated, detections
+
     # ------------------------------------------------------------------ draw
     def _draw(self, img: np.ndarray, det: Detection, palette_idx: int) -> None:
         color = _color(palette_idx)
@@ -355,6 +531,14 @@ class Pipeline:
             img, text, (14, 8 + th + 6),
             cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 214, 102), 1, cv2.LINE_AA,
         )
+
+    def landing_snapshot(self) -> dict:
+        """Recent live landings (rolling CSV/JSON) for the UI and any consumer."""
+        if self._landing_logger is None:
+            return {"enabled": False, "total_landings": 0, "real_landings": 0, "recent": []}
+        snap = self._landing_logger.snapshot()
+        snap["enabled"] = True
+        return snap
 
     # ------------------------------------------------------------------ read
     def latest_jpeg(self, last_seen_id: int, timeout: float = 1.0) -> tuple[bytes, int]:

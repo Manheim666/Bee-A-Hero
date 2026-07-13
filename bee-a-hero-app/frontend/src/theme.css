@@ -1,168 +1,197 @@
+/* ============================================================================
+   Bee-A-Hero — "Field instrument for pollination"
+   A precise, alive dashboard for a computer-vision pollination monitor.
+   Signature: the CV detection-box motif (corner ticks) as a real UI device,
+   over a slow pollen-aurora. Palette: botanical night + pollen gold + a
+   nectar-lime accent (pollen is literally yellow-green = active/alive).
+   Token names are kept stable — pages reference them inline — and re-valued.
+   ========================================================================== */
+
 :root {
-  --honey: #f6a623;
-  --honey-deep: #e07b00;
-  --amber-glow: #ffd666;
-  --bee-black: #241e17;
-  --charcoal: #3a342c;
-  --cream: #fffbf2;
-  --card: #ffffff;
-  --border: #efe3cc;
-  --leaf: #6bbf59;
-  --pollinator: #f6a623;
+  /* brand */
+  --honey: #ef9f22;
+  --honey-deep: #cf7a05;
+  --amber-glow: #ffd878;
+  --nectar: #96c11a;          /* pollen-lime, tuned for contrast on light paper */
+  --nectar-deep: #6f9410;
+  --petal: #e0577f;           /* flower petal — flowers / non-pollinator warmth */
+  /* ink + surfaces */
+  --bee-black: #171d16;
+  --charcoal: #5c6353;
+  --cream: #f7f3ea;
+  --card: #fffdf8;
+  --border: #e8e1d1;
+  --hairline: rgba(23, 29, 22, 0.08);
+  --glass: rgba(255, 253, 248, 0.72);
+  /* semantic */
+  --leaf: #4a9e2f;
+  --pollinator: #3f8f2a;
   --non: #4c8db5;
-  --danger: #a13020;
+  --danger: #b23417;
   --danger-bg: #fbdcd6;
-  --success-bg: #dff3d8;
+  --success-bg: #e2f2d6;
   --success-fg: #2f6b23;
-  --queued-bg: #f0ebe0;
-  --shadow: 0 6px 20px rgba(90, 60, 10, 0.1);
-  --shadow-lg: 0 12px 32px rgba(90, 60, 10, 0.16);
-  --radius: 16px;
-  --radius-sm: 10px;
-  --font: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  --honeycomb-dot: rgba(246, 166, 35, 0.06);
-  --focus-ring: 2px solid var(--amber-glow);
+  --queued-bg: #efe9dc;
+  /* depth */
+  --shadow: 0 6px 20px rgba(70, 52, 10, 0.09);
+  --shadow-lg: 0 18px 44px rgba(70, 52, 10, 0.18);
+  --radius: 18px;
+  --radius-sm: 11px;
+  /* type */
+  --font: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --font-display: "Space Grotesk", var(--font);
+  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --honeycomb-dot: rgba(207, 122, 5, 0.05);
+  --aurora-1: rgba(150, 193, 26, 0.20);
+  --aurora-2: rgba(239, 159, 34, 0.18);
+  --focus-ring: 2px solid var(--nectar-deep);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --honey: #ffb84a;
-    --honey-deep: #ffa02a;
-    --amber-glow: #4a3a1a;
-    --bee-black: #f4ecdc;
-    --charcoal: #c9c0ae;
-    --cream: #14110c;
-    --card: #1e1a13;
-    --border: #2f2a20;
+    --honey: #ffbe4d;
+    --honey-deep: #ffa62e;
+    --amber-glow: #3a3316;
+    --nectar: #c6f24e;         /* the mesmerizing accent — pops on night */
+    --nectar-deep: #a9d827;
+    --petal: #ef7ea0;
+    --bee-black: #eef2e6;
+    --charcoal: #99a390;
+    --cream: #0e120d;
+    --card: #171d16;
+    --border: #272e24;
+    --hairline: rgba(238, 242, 230, 0.08);
+    --glass: rgba(23, 29, 22, 0.66);
     --leaf: #7fd06e;
-    --pollinator: #ffb84a;
+    --pollinator: #8fd06e;
     --non: #6fb4dc;
     --danger: #ff8d76;
     --danger-bg: #3b1f18;
     --success-bg: #1e2f18;
     --success-fg: #a9de95;
-    --queued-bg: #2a251b;
+    --queued-bg: #23291f;
     --shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.65);
-    --honeycomb-dot: rgba(255, 184, 74, 0.08);
+    --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
+    --honeycomb-dot: rgba(198, 242, 78, 0.06);
+    --aurora-1: rgba(150, 200, 40, 0.16);
+    --aurora-2: rgba(255, 166, 46, 0.14);
     color-scheme: dark;
   }
 }
 
+/* explicit theme overrides (toggle stamps data-theme; must win both ways) */
 :root[data-theme="light"] {
-  --honey: #f6a623;
-  --honey-deep: #e07b00;
-  --amber-glow: #ffd666;
-  --bee-black: #241e17;
-  --charcoal: #3a342c;
-  --cream: #fffbf2;
-  --card: #ffffff;
-  --border: #efe3cc;
-  --danger: #a13020;
-  --danger-bg: #fbdcd6;
-  --success-bg: #dff3d8;
-  --success-fg: #2f6b23;
-  --queued-bg: #f0ebe0;
-  --shadow: 0 6px 20px rgba(90, 60, 10, 0.1);
-  --shadow-lg: 0 12px 32px rgba(90, 60, 10, 0.16);
-  --honeycomb-dot: rgba(246, 166, 35, 0.06);
+  --honey: #ef9f22; --honey-deep: #cf7a05; --amber-glow: #ffd878;
+  --nectar: #96c11a; --nectar-deep: #6f9410; --petal: #e0577f;
+  --bee-black: #171d16; --charcoal: #5c6353; --cream: #f7f3ea; --card: #fffdf8;
+  --border: #e8e1d1; --hairline: rgba(23,29,22,0.08); --glass: rgba(255,253,248,0.72);
+  --leaf: #4a9e2f; --pollinator: #3f8f2a; --non: #4c8db5;
+  --danger: #b23417; --danger-bg: #fbdcd6; --success-bg: #e2f2d6; --success-fg: #2f6b23;
+  --queued-bg: #efe9dc;
+  --shadow: 0 6px 20px rgba(70,52,10,0.09); --shadow-lg: 0 18px 44px rgba(70,52,10,0.18);
+  --honeycomb-dot: rgba(207,122,5,0.05);
+  --aurora-1: rgba(150,193,26,0.20); --aurora-2: rgba(239,159,34,0.18);
   color-scheme: light;
 }
-
 :root[data-theme="dark"] {
-  --honey: #ffb84a;
-  --honey-deep: #ffa02a;
-  --amber-glow: #4a3a1a;
-  --bee-black: #f4ecdc;
-  --charcoal: #c9c0ae;
-  --cream: #14110c;
-  --card: #1e1a13;
-  --border: #2f2a20;
-  --danger: #ff8d76;
-  --danger-bg: #3b1f18;
-  --success-bg: #1e2f18;
-  --success-fg: #a9de95;
-  --queued-bg: #2a251b;
-  --shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.65);
-  --honeycomb-dot: rgba(255, 184, 74, 0.08);
+  --honey: #ffbe4d; --honey-deep: #ffa62e; --amber-glow: #3a3316;
+  --nectar: #c6f24e; --nectar-deep: #a9d827; --petal: #ef7ea0;
+  --bee-black: #eef2e6; --charcoal: #99a390; --cream: #0e120d; --card: #171d16;
+  --border: #272e24; --hairline: rgba(238,242,230,0.08); --glass: rgba(23,29,22,0.66);
+  --leaf: #7fd06e; --pollinator: #8fd06e; --non: #6fb4dc;
+  --danger: #ff8d76; --danger-bg: #3b1f18; --success-bg: #1e2f18; --success-fg: #a9de95;
+  --queued-bg: #23291f;
+  --shadow: 0 6px 20px rgba(0,0,0,0.5); --shadow-lg: 0 20px 48px rgba(0,0,0,0.7);
+  --honeycomb-dot: rgba(198,242,78,0.06);
+  --aurora-1: rgba(150,200,40,0.16); --aurora-2: rgba(255,166,46,0.14);
   color-scheme: dark;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
 
 body {
   font-family: var(--font);
   background: var(--cream);
   color: var(--bee-black);
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    var(--honeycomb-dot) 1px,
-    transparent 0
-  );
-  background-size: 22px 22px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  background-image: radial-gradient(circle at 1px 1px, var(--honeycomb-dot) 1px, transparent 0);
+  background-size: 24px 24px;
+  transition: background-color 0.25s ease, color 0.25s ease;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-a {
-  color: var(--honey-deep);
-  text-decoration: none;
+/* --- signature: slow pollen aurora drifting behind everything -------------- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20vmax;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38vmax 38vmax at 18% 12%, var(--aurora-1), transparent 60%),
+    radial-gradient(34vmax 34vmax at 84% 78%, var(--aurora-2), transparent 62%);
+  filter: blur(12px);
+  animation: drift 26s ease-in-out infinite alternate;
+}
+@keyframes drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(2vmax, -1.5vmax, 0) scale(1.06); }
+  100% { transform: translate3d(-2vmax, 2vmax, 0) scale(1.02); }
 }
 
-a:hover {
-  text-decoration: underline;
-}
+a { color: var(--honey-deep); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { font-family: var(--font); cursor: pointer; }
 
-button {
-  font-family: var(--font);
-  cursor: pointer;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible {
+button:focus-visible, a:focus-visible, input:focus-visible {
   outline: var(--focus-ring);
   outline-offset: 2px;
 }
 
-h1,
-h2,
-h3 {
+h1, h2, h3 {
   margin: 0 0 0.4em;
   color: var(--bee-black);
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
+h1 { font-size: clamp(1.7rem, 1.1rem + 2.4vw, 2.6rem); font-weight: 700; }
 
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px;
-}
+.container { max-width: 1140px; margin: 0 auto; padding: 26px; }
 
+/* --- cards ----------------------------------------------------------------- */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 20px;
-  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
 }
-
+.card-hover { position: relative; }
 .card-hover:hover {
   box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
-  border-color: var(--honey);
+  transform: translateY(-3px);
+  border-color: var(--nectar);
 }
+/* detection-corner ticks appear on hover — the CV bounding-box motif */
+.card-hover::before, .card-hover::after {
+  content: "";
+  position: absolute;
+  width: 14px; height: 14px;
+  border: 2px solid var(--nectar);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
+}
+.card-hover::before { top: 8px; left: 8px; border-right: 0; border-bottom: 0; border-top-left-radius: 4px; }
+.card-hover::after { bottom: 8px; right: 8px; border-left: 0; border-top: 0; border-bottom-right-radius: 4px; }
+.card-hover:hover::before, .card-hover:hover::after { opacity: 0.9; }
 
+/* --- buttons --------------------------------------------------------------- */
 .btn {
   background: linear-gradient(135deg, var(--honey), var(--honey-deep));
   color: #1a1208;
@@ -170,24 +199,13 @@ h3 {
   border-radius: 999px;
   padding: 10px 20px;
   font-weight: 600;
-  transition: transform 0.1s ease, opacity 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 2px 8px rgba(224, 123, 0, 0.25);
+  font-family: var(--font);
+  transition: transform 0.1s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  box-shadow: 0 2px 10px rgba(207, 122, 5, 0.28);
 }
-
-.btn:hover {
-  opacity: 0.95;
-  box-shadow: 0 4px 14px rgba(224, 123, 0, 0.35);
-}
-
-.btn:active {
-  transform: translateY(1px);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none;
-}
+.btn:hover { filter: brightness(1.04); box-shadow: 0 6px 18px rgba(207, 122, 5, 0.4); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; filter: none; }
 
 .btn-ghost {
   background: transparent;
@@ -195,11 +213,9 @@ h3 {
   border: 1px solid var(--border);
   box-shadow: none;
 }
+.btn-ghost:hover { background: var(--queued-bg); border-color: var(--nectar); filter: none; }
 
-.btn-ghost:hover {
-  background: var(--queued-bg);
-}
-
+/* --- inputs ---------------------------------------------------------------- */
 .input {
   width: 100%;
   padding: 11px 14px;
@@ -211,147 +227,122 @@ h3 {
   color: var(--bee-black);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-
 .input:focus {
   outline: none;
-  border-color: var(--honey);
-  box-shadow: 0 0 0 3px var(--amber-glow);
+  border-color: var(--nectar-deep);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--nectar) 32%, transparent);
 }
+.input::placeholder { color: var(--charcoal); opacity: 0.55; }
 
-.input::placeholder {
-  color: var(--charcoal);
-  opacity: 0.55;
-}
+.muted { color: var(--charcoal); opacity: 0.9; }
+.mono { font-family: var(--font-mono); }
 
-.muted {
-  color: var(--charcoal);
-  opacity: 0.85;
-}
-
+/* --- pills / status -------------------------------------------------------- */
 .pill {
   display: inline-block;
   padding: 3px 12px;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   text-transform: capitalize;
 }
+.pill-queued { background: var(--queued-bg); color: var(--charcoal); }
+.pill-processing { background: var(--amber-glow); color: var(--bee-black); }
+.pill-done { background: var(--success-bg); color: var(--success-fg); }
+.pill-failed { background: var(--danger-bg); color: var(--danger); }
 
-.pill-queued {
-  background: var(--queued-bg);
-  color: var(--charcoal);
-}
-.pill-processing {
-  background: var(--amber-glow);
-  color: var(--bee-black);
-}
-.pill-done {
-  background: var(--success-bg);
-  color: var(--success-fg);
-}
-.pill-failed {
-  background: var(--danger-bg);
-  color: var(--danger);
-}
+.grid { display: grid; gap: 20px; }
 
-.grid {
-  display: grid;
-  gap: 20px;
-}
-
+/* --- spinner --------------------------------------------------------------- */
 .spinner {
-  width: 18px;
-  height: 18px;
-  border: 3px solid var(--amber-glow);
+  width: 18px; height: 18px;
+  border: 3px solid color-mix(in srgb, var(--nectar) 35%, transparent);
   border-top-color: var(--honey-deep);
   border-radius: 50%;
   display: inline-block;
   animation: spin 0.8s linear infinite;
   vertical-align: middle;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
+/* --- hero: honeycomb header, now a framed instrument panel ----------------- */
 .honeycomb-header {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, var(--card), var(--queued-bg));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--honey) 14%, var(--card)), var(--card));
   border: 1px solid var(--border);
-  padding: 34px 28px;
-  margin-bottom: 24px;
+  padding: 38px 30px;
+  margin-bottom: 26px;
 }
-
 .honeycomb-header::after {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.35;
-  background-image: radial-gradient(
-    circle at 2px 2px,
-    var(--honeycomb-dot) 2px,
-    transparent 0
-  );
-  background-size: 26px 26px;
+  opacity: 0.4;
+  background-image: radial-gradient(circle at 2px 2px, var(--honeycomb-dot) 2px, transparent 0);
+  background-size: 28px 28px;
   pointer-events: none;
 }
-
-.honeycomb-header > * {
-  position: relative;
-  z-index: 1;
+.honeycomb-header > * { position: relative; z-index: 1; }
+/* detection-frame corner ticks on the hero — the product literally boxes bees */
+.honeycomb-header > .hc-corner {
+  position: absolute;
+  width: 22px; height: 22px;
+  border: 2.5px solid var(--nectar);
+  z-index: 2;
+  opacity: 0.85;
 }
+.hc-corner.tl { top: 12px; left: 12px; border-right: 0; border-bottom: 0; }
+.hc-corner.tr { top: 12px; right: 12px; border-left: 0; border-bottom: 0; }
+.hc-corner.bl { bottom: 12px; left: 12px; border-right: 0; border-top: 0; }
+.hc-corner.br { bottom: 12px; right: 12px; border-left: 0; border-top: 0; }
 
+/* reusable detection frame for any element */
+.detect-frame { position: relative; }
+.detect-frame::before, .detect-frame::after {
+  content: ""; position: absolute; width: 16px; height: 16px;
+  border: 2px solid var(--nectar); pointer-events: none;
+}
+.detect-frame::before { top: 6px; left: 6px; border-right: 0; border-bottom: 0; }
+.detect-frame::after { bottom: 6px; right: 6px; border-left: 0; border-top: 0; }
+
+/* --- theme toggle ---------------------------------------------------------- */
 .theme-toggle {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--bee-black);
-  width: 38px;
-  height: 38px;
+  width: 38px; height: 38px;
   border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-flex; align-items: center; justify-content: center;
   font-size: 1.05rem;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.2s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.25s ease;
 }
+.theme-toggle:hover { background: var(--queued-bg); border-color: var(--nectar); transform: rotate(18deg); }
 
-.theme-toggle:hover {
-  background: var(--queued-bg);
-  border-color: var(--honey);
-  transform: rotate(15deg);
-}
-
-.password-wrap {
-  position: relative;
-}
-
-.password-wrap .input {
-  padding-right: 44px;
-}
-
+/* --- password field -------------------------------------------------------- */
+.password-wrap { position: relative; }
+.password-wrap .input { padding-right: 44px; }
 .password-toggle {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  color: var(--charcoal);
-  font-size: 1rem;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: transparent; border: none; color: var(--charcoal);
+  font-size: 1rem; padding: 6px 8px; border-radius: var(--radius-sm);
 }
-
-.password-toggle:hover {
-  color: var(--honey-deep);
-}
+.password-toggle:hover { color: var(--honey-deep); }
 
 @media (max-width: 768px) {
-  .container {
-    padding: 16px;
+  .container { padding: 16px; }
+  .honeycomb-header { padding: 26px 20px; }
+}
+
+/* accessibility: respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
