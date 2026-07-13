@@ -42,6 +42,11 @@ _PALETTE = [
 ]
 
 
+# A real flower/insect is small in frame; a box this large is a wall/person/OOD false
+# positive (YOLO is closed-set and snaps humans onto a trained class). Drop it.
+MAX_BOX_FRAC = 0.22
+
+
 def _color(idx: int) -> tuple[int, int, int]:
     return _PALETTE[idx % len(_PALETTE)]
 
@@ -72,6 +77,7 @@ def _resolve_models() -> list[LoadedModel]:
 
 def _draw_boxes(frame, results, tag: str, palette_offset: int) -> int:
     count = 0
+    frame_area = float(frame.shape[0] * frame.shape[1])
     for r in results:
         names = r.names
         if r.boxes is None:
@@ -80,6 +86,8 @@ def _draw_boxes(frame, results, tag: str, palette_offset: int) -> int:
             cls_id = int(box.cls.item())
             conf = float(box.conf.item())
             x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
+            if (x2 - x1) * (y2 - y1) > MAX_BOX_FRAC * frame_area:
+                continue                      # oversized -> wall/person/OOD false positive
             label = names.get(cls_id, str(cls_id)) if isinstance(names, dict) else names[cls_id]
             color = _color(palette_offset + cls_id)
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
