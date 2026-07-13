@@ -14,8 +14,9 @@ export default function VideoCard({ video, onDelete, onOpen }) {
   const posterRef = useRef(null);
   useEffect(() => {
     let cancelled = false;
+    const bust = encodeURIComponent(video.uploaded_at || video.status || "");
     api
-      .get(`/api/videos/${video.id}/poster`, { responseType: "blob" })
+      .get(`/api/videos/${video.id}/poster?v=${bust}`, { responseType: "blob" })
       .then((res) => {
         if (cancelled) return;
         const url = URL.createObjectURL(res.data);
