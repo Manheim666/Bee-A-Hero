@@ -3,7 +3,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Body, FastAPI
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -38,6 +38,7 @@ def health():
     return {
         "status": "ok",
         "droidcam_url": settings.droidcam_url,
+        "source": get_pipeline().get_source(),
         "models": settings.model_path_list(),
         "labels": settings.model_label_list(),
         "conf": settings.conf_threshold,
@@ -45,9 +46,31 @@ def health():
     }
 
 
+@app.get("/api/source")
+def get_source():
+    return {"source": get_pipeline().get_source()}
+
+
+@app.post("/api/source")
+def set_source(source: str = Body(..., embed=True)):
+    """Switch the live camera at runtime: a phone DroidCam URL
+    (e.g. http://192.168.1.5:4747/video) or a bare webcam index ("0")."""
+    src = (source or "").strip()
+    if not src:
+        return JSONResponse({"error": "empty source"}, status_code=400)
+    get_pipeline().set_source(src)
+    return {"source": src}
+
+
 @app.get("/api/stats")
 def stats():
     return JSONResponse(get_pipeline().state.snapshot())
+
+
+@app.get("/api/landings")
+def landings():
+    """Rolling live landings (flower id, enter/exit, dwell) written as insects land + leave."""
+    return JSONResponse(get_pipeline().landing_snapshot())
 
 
 def _mjpeg_generator():

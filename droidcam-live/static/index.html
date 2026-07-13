@@ -192,6 +192,27 @@
 
       <aside class="side">
         <div class="card">
+          <h2>Camera source</h2>
+          <p style="margin:0 0 8px; font-size:0.8rem; color:var(--muted);">
+            Connect your phone via <strong>DroidCam</strong>: open the DroidCam app, note the URL
+            (e.g. <code>http://192.168.1.5:4747/video</code>), paste it below and Connect.
+          </p>
+          <input id="srcInput" type="text" placeholder="http://PHONE_IP:4747/video"
+            style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+                   background:#14110c; color:var(--text); font-size:0.85rem; margin-bottom:8px;" />
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button id="srcConnect" class="back-link" style="border:none; cursor:pointer;">Connect phone</button>
+            <button id="srcWebcam" class="back-link"
+              style="border:none; cursor:pointer; background:var(--panel); color:var(--text); border:1px solid var(--border);">
+              Use webcam
+            </button>
+          </div>
+          <div style="margin-top:8px; font-size:0.78rem; color:var(--muted);">
+            Current: <code id="curSrc">–</code>
+          </div>
+          <div class="error-line" id="srcErr"></div>
+        </div>
+        <div class="card">
           <h2>Client FPS</h2>
           <div class="stat"><span id="clientFps">0.0</span><small>frames/s</small></div>
         </div>
@@ -211,6 +232,16 @@
           <ul class="rows" id="perClass">
             <li class="empty">No detections yet.</li>
           </ul>
+        </div>
+        <div class="card" id="landCard" style="display:none">
+          <h2>Live landings</h2>
+          <div class="stat"><span id="realLandings">0</span><small>visits (&gt;2s)</small></div>
+          <ul class="rows" id="landingList" style="margin-top:10px;">
+            <li class="empty">Waiting for the first landing…</li>
+          </ul>
+          <div style="margin-top:8px; font-size:0.75rem; color:var(--muted);">
+            Written to <code>live_out/live_landings.csv</code> + <code>.json</code> as insects land &amp; leave.
+          </div>
         </div>
       </aside>
     </main>
@@ -320,6 +351,73 @@
       }
       setInterval(pollStats, 1000);
       pollStats();
+
+      // --- camera source switching (connect a phone via DroidCam at runtime) ------
+      const srcInput = document.getElementById("srcInput");
+      const srcErr = document.getElementById("srcErr");
+      const curSrc = document.getElementById("curSrc");
+
+      async function refreshSource() {
+        try {
+          const r = await fetch("/api/source");
+          const j = await r.json();
+          curSrc.textContent = j.source || "–";
+        } catch (_) {}
+      }
+
+      async function setSource(value) {
+        srcErr.textContent = "";
+        try {
+          const r = await fetch("/api/source", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ source: value }),
+          });
+          const j = await r.json();
+          if (!r.ok) throw new Error(j.error || "HTTP " + r.status);
+          curSrc.textContent = j.source;
+          // Re-open the MJPEG stream so it picks up the new camera immediately.
+          setTimeout(bootStream, 800);
+        } catch (err) {
+          srcErr.textContent = String(err);
+        }
+      }
+
+      document.getElementById("srcConnect").addEventListener("click", () => {
+        const v = srcInput.value.trim();
+        if (!v) { srcErr.textContent = "Enter the DroidCam URL first."; return; }
+        setSource(v);
+      });
+      document.getElementById("srcWebcam").addEventListener("click", () => setSource("0"));
+      refreshSource();
+      setInterval(refreshSource, 5000);
+
+      // --- live landings (rolling CSV/JSON) --------------------------------------
+      const landCard = document.getElementById("landCard");
+      const landingList = document.getElementById("landingList");
+      const realLandings = document.getElementById("realLandings");
+      async function pollLandings() {
+        try {
+          const r = await fetch("/api/landings");
+          const j = await r.json();
+          if (!j.enabled) { landCard.style.display = "none"; return; }
+          landCard.style.display = "block";
+          realLandings.textContent = j.real_landings;
+          const rows = j.recent || [];
+          if (rows.length === 0) {
+            landingList.innerHTML = '<li class="empty">Waiting for the first landing…</li>';
+          } else {
+            landingList.innerHTML = rows.slice(0, 8).map((d) => {
+              const kind = d.is_pollinator ? "🐝" : "🪰";
+              const real = d.is_real_landing ? "" : ' <span style="color:var(--muted)">(brief)</span>';
+              return `<li><span class="k">${kind} ${d.insect_type} → ${d.flower_id}</span>`
+                + `<span class="v">${d.landing_s}s${real}</span></li>`;
+            }).join("");
+          }
+        } catch (_) {}
+      }
+      setInterval(pollLandings, 1500);
+      pollLandings();
     </script>
   </body>
 </html>

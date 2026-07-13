@@ -296,8 +296,6 @@ export default function VideoPlayer({ video, onClose }) {
               label="Non-pollinator"
               color="var(--non)"
             />
-            <MiniStat value={`${(r.flower_map50 * 100).toFixed(1)}%`} label="Flower mAP50" />
-            <MiniStat value={`${(r.insect_map50 * 100).toFixed(1)}%`} label="Insect mAP50" />
           </div>
         )}
 

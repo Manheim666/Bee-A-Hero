@@ -90,3 +90,6 @@ models/yield_report.json
 
 # web-upload CV outputs (runtime)
 bee-a-hero-app/backend/cv_out/
+
+# live camera rolling landing output (generated at runtime)
+droidcam-live/live_out/
