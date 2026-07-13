@@ -16,8 +16,10 @@ drops into `backend/app/services/detector.py` later without touching any caller.
 - **Backend** — FastAPI + Uvicorn, SQLAlchemy, SQLite, Pydantic v2.
 - **Auth** — JWT (bcrypt-hashed passwords), token in `localStorage`, sent as
   `Authorization: Bearer`.
-- **Assistant** — Anthropic API when `ANTHROPIC_API_KEY` is set; a mock echo
-  provider otherwise, so the chat always works.
+- **Assistant** — pick a provider per chat in the Assistant tab: **Gemini**
+  (`GEMINI_API_KEY`) or **Hugging Face** (`HF_API_TOKEN`); a mock echo provider
+  answers when no key is set, so the chat always works. Answers are grounded in
+  your real CV + ML results.
 - **Detection job** — FastAPI `BackgroundTasks` (no Celery/Redis).
 
 ## Run it
@@ -71,7 +73,7 @@ python -m venv .venv
 # Windows:  .venv\Scripts\activate
 # macOS/Linux:  source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env            # optional; add ANTHROPIC_API_KEY for real AI
+cp .env.example .env            # optional; add GEMINI_API_KEY / HF_API_TOKEN for real AI
 python -m seed                  # demo user + sample video
 uvicorn app.main:app --reload
 ```
@@ -97,10 +99,18 @@ password: beehero123
 
 ## Enabling the real AI assistant
 
-Set `ANTHROPIC_API_KEY` in `backend/.env` (or the compose environment). Without
-it, the assistant uses a built-in mock provider that references your stats, so
-the feature demos with no key. The model is set in one constant:
-`ANTHROPIC_MODEL` in `backend/app/services/llm.py`.
+Add a key to `backend/.env` (git-ignored, read by absolute path, never printed):
+
+```
+GEMINI_API_KEY=...      # https://aistudio.google.com/apikey
+HF_API_TOKEN=...        # https://huggingface.co/settings/tokens
+```
+
+Then choose **Gemini** or **Hugging Face** from the dropdown in the Assistant
+tab (unset providers show "(add key)"). Without any key, a built-in mock provider
+references your stats so the feature demos with no key. Models are set in one
+constant each (`GEMINI_MODEL`, `hf_model`) in `backend/app/services/llm.py` /
+`config.py`.
 
 ## Demo script
 
@@ -122,8 +132,8 @@ bee-a-hero-app/
       db.py  models.py  schemas.py  auth.py  config.py
       routers/  auth.py  videos.py  stats.py  chat.py
       services/
-        detector.py      MOCK + clear "REAL MODEL GOES HERE" block
-        llm.py           Anthropic + mock chat provider
+        detector.py      real tracked CV pipeline (count_visits_det) + mock fallback
+        llm.py           Gemini / Hugging Face / mock chat providers
         stats.py         aggregation / filters
     seed.py              demo user + one processed sample video
     uploads/             saved videos (gitignored)
