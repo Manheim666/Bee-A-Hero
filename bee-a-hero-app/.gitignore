@@ -16,6 +16,9 @@ dist/
 # Env
 .env
 
+# Launcher logs
+.logs/
+
 # OS
 .DS_Store
 Thumbs.db

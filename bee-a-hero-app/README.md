@@ -22,6 +22,33 @@ drops into `backend/app/services/detector.py` later without touching any caller.
 
 ## Run it
 
+### Easiest — one script, no Docker
+
+Prereqs: Python 3.11+ and Node 20+ installed.
+
+**macOS / Linux**
+
+```bash
+cd bee-a-hero-app
+./start.sh
+```
+
+**Windows**
+
+```bat
+cd bee-a-hero-app
+start.bat
+```
+
+Either script creates the Python venv, installs backend + frontend deps,
+seeds the demo user, launches both servers, and opens the browser. Re-run
+whenever — it skips any step already done. Press Ctrl+C to stop (macOS/Linux)
+or close the two minimized "Bee-A-Hero" windows (Windows).
+
+- App: http://localhost:5173
+- API docs: http://localhost:8000/docs
+- Login: `demo@bee.dev` / `beehero123`
+
 ### Option A — one command (Docker)
 
 ```bash
