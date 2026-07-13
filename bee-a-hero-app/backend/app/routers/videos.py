@@ -233,7 +233,8 @@ def stream_annotated_video(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Annotated video not ready yet",
         )
-    return FileResponse(dst, media_type="video/mp4", filename=f"annotated_{video.original_name}")
+    return FileResponse(dst, media_type="video/mp4", filename=f"annotated_{video.original_name}",
+                        headers={"Cache-Control": "no-store"})
 
 
 @router.get("/{video_id}/poster")
@@ -271,7 +272,9 @@ def video_poster(
         if not ok:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No frame to read")
         cv2.imwrite(str(poster), frame, [cv2.IMWRITE_JPEG_QUALITY, 82])
-    return FileResponse(poster, media_type="image/jpeg")
+    # never cache: SQLite reuses deleted video ids, so /videos/{id}/poster must not serve a
+    # previous video's cover from the browser cache.
+    return FileResponse(poster, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
 @router.get("/{video_id}/stream")
@@ -292,6 +295,7 @@ def stream_video(
         path,
         media_type=media_type or "video/mp4",
         filename=video.original_name,
+        headers={"Cache-Control": "no-store"},
     )
 
 
