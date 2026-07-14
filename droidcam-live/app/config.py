@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     jpeg_quality: int = 80
     device: str = "cpu"
 
+    # --- processing pace ("add delay so the model can work better") ---------------
+    # Cap the inference rate: after each processed frame, wait so at most 1/min_frame_interval
+    # frames/sec are run. A slower, steady cadence gives the model a full pass per frame and lets
+    # BoT-SORT hold IDs (no racing/dropping), and it steadies the landing-dwell clock. Raise for
+    # more delay (calmer, better locks), lower for more responsiveness.
+    min_frame_interval: float = 0.20   # ~5 fps processed (env: MIN_FRAME_INTERVAL)
+
     # --- false-positive gating (humans OOD -> misread as flower/insect) ----------
     # YOLO is closed-set: a person has no class, so it snaps onto flower/insect. Veto
     # any detection that overlaps a COCO person box, and drop any box too big to be a

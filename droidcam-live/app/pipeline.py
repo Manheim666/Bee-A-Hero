@@ -287,6 +287,7 @@ class Pipeline:
         window_start = time.time()
 
         while not self._stop.is_set():
+            loop_start = time.time()
             frame = self._raw_slot.take_new(last_seen_id=last_id, timeout=1.0)
             if frame is None:
                 continue
@@ -323,6 +324,13 @@ class Pipeline:
                 self.state.inference_fps = infer_count / (now - window_start)
                 infer_count = 0
                 window_start = now
+
+            # Pace the loop: hold a steady processing cadence so the model gets a full pass per
+            # frame and the tracker keeps IDs, instead of racing the capture thread. Sleep only
+            # the time left in this frame's budget (0 if inference already took longer).
+            spare = settings.min_frame_interval - (time.time() - loop_start)
+            if spare > 0:
+                time.sleep(spare)
 
     def _person_boxes(self, frame: np.ndarray) -> list[tuple[int, int, int, int]]:
         """COCO person boxes for the veto (empty if the veto model is off/unavailable)."""
