@@ -117,6 +117,43 @@ Collect in-domain labeled video before May bloom, fit k on paired visit/fruit-se
 
 ---
 
+## G. Jury / business / product (the 30% they score — answer with confidence)
+
+**Q: Who is the customer and who pays?**
+Pomegranate (and later other-crop) growers and orchard cooperatives; agronomy/ag-tech services; researchers and conservation programs. They pay to *quantify pollinator value* — to decide on hive rental, habitat, and spray timing, which are real line-item costs.
+
+**Q: What's the business value in one sentence?**
+We turn a cheap camera into a pollination instrument that tells a grower how much of their fruit set the bees are actually buying them — so they can invest in pollinators with evidence instead of guessing.
+
+**Q: Is this a real problem or a nice-to-have?**
+Real and measurable: pollinator decline is global, ~a third of food depends on pollinators, and growers currently have **zero** visibility into on-farm pollinator performance. We give them the missing measurement.
+
+**Q: Why will this actually get adopted?**
+Low friction: runs on CPU, uses a phone (DroidCam) or any camera, and outputs a plain-language report a non-technical grower can read. No lab, no GPU, no data-science team required.
+
+**Q: What's the market / scale story?**
+Start with pomegranate in the Caspian region (culturally central, clear season), then the *same pipeline* generalizes to any insect-pollinated crop by swapping the flower detector. The pollination-monitoring / precision-ag space is growing precisely because pollinator risk is now a board-level agricultural concern.
+
+**Q: What's the moat / why can't someone copy it in a weekend?**
+The defensibility is in the *method*, not a single model: the lift-not-dependency science, the occlusion-aware visit state machine, in-domain data, and one-source-of-truth engineering. A weekend clone counts bee-frames and over-reports 15×.
+
+**Q: Biggest risk to the business and how do you de-risk it?**
+Calibration data — you need paired visit/fruit-set labels over a bloom season to fit the yield curve. We de-risk by reporting a **validated relative index** now (defensible without calibration) and lining up ground-truth collection for the season.
+
+**Q: What did you cut, and why (scope/trade-offs)?**
+We cut multi-camera ReID (genuinely hard on bees) and absolute-kg calibration (impossible in one season) to ship a working single-camera measurement system with honest relative-lift output. That's a deliberate scope decision, not a gap.
+
+**Q: What would you do next with more time/funding?**
+One bloom season of in-domain labeled video, fit k on paired visit/fruit-set flowers, overlapping-camera homography handoff, and a grower-facing weekly report. Then a pilot with a cooperative.
+
+**Q: How is this different from existing insect-camera / smart-trap products?**
+Most count or classify insects. We connect visitation to a **crop-yield economic signal** with a defensible saturating-lift model — measurement *plus* meaning.
+
+**Q: Team — how did you split the work?**
+Data & training (Raul, Khaver), CV engine + tracking + QA (Asif), ML modeling + LLM reporting (Narmin), with the lead coordinating research direction. Four people, one integrated pipeline that merges cleanly to `main`.
+
+---
+
 ## F. Rapid-fire facts (memorize)
 - Flower mAP **0.808** · insect mAP **0.669** · classifier **0.978**
 - Visit = **≥ 2 s** on a flower · honeybee weight **10×**
