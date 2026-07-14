@@ -166,21 +166,21 @@ class LandingLogger:
                 d = ((cen[0] - sub["prev_c"][0]) ** 2 + (cen[1] - sub["prev_c"][1]) ** 2) ** 0.5
                 speed = (d / dt) / (area ** 0.5)
             sub["prev_c"], sub["prev_t"] = cen, t_s
+            # A landing is ONLY an insect whose centre is inside a REAL detected flower's bbox.
+            # (Previously a slow insect with no flower under it opened a synthetic "flower_unk"
+            #  episode -> insects noted on flowers that were not there.) No flower under it =>
+            #  not a landing, even if it is motionless.
             cur = next((fid for fid, fb in flowers if _contains(fb, cen)), None)
-            settled = cur is not None or speed < self._tau
-            if settled:
-                fid_use = cur if cur is not None else "flower_unk"
-                det = "detected" if cur is not None else "inferred"
+            if cur is not None:
                 ep = sub["ep"]
                 if ep is None:
-                    sub["ep"] = {"flower": fid_use, "enter_t": t_s, "last_t": t_s,
-                                 "detected": det, "conf_sum": float(conf), "conf_n": 1,
+                    sub["ep"] = {"flower": cur, "enter_t": t_s, "last_t": t_s,
+                                 "detected": "detected", "conf_sum": float(conf), "conf_n": 1,
                                  "enter_wall": datetime.now().isoformat(timespec="seconds")}
                 else:
                     ep["last_t"] = t_s
                     ep["conf_sum"] += float(conf); ep["conf_n"] += 1
-                    if det == "detected" and ep["detected"] == "inferred":
-                        ep["detected"] = "detected"; ep["flower"] = fid_use
+                    ep["flower"] = cur                 # follow the flower the insect is on
             else:
                 ep = sub["ep"]
                 if ep is not None and t_s - ep["last_t"] > self._grace_s:
