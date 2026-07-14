@@ -1,10 +1,33 @@
-# Bee-A-Hero
+# 🐝 Bee-A-Hero
 
-**A pollination-monitoring system that turns orchard video into a quantitative pollination
-signal.** Cameras watch flowers; the pipeline detects and tracks the insects that visit them,
-measures how long each insect lands, and converts those landings — stage by stage — into a
-per-flower, per-species visit record, a fruit-set estimate, and a yield estimate, finally
-narrated as a plain-language report.
+### Turn orchard video into a quantitative pollination signal — and a defensible yield-lift estimate.
+
+**Bee-A-Hero** watches pomegranate flowers, detects and tracks the insects that visit them
+without double-counting, measures how long each insect actually lands, and converts those
+landings — stage by stage — into a per-flower, per-species visit record, a fruit-set estimate,
+and a yield estimate, finally narrated by a grounded AI assistant. It ships as a **full-stack
+web app** (upload → annotated video + stats), a **live camera viewer** (phone via DroidCam or a
+webcam), and a reproducible **CV/ML pipeline**.
+
+<sub>`YOLO26` · `BoT-SORT` · `FastAPI` · `React` · `Gemini / Hugging Face` · CPU-friendly · Baku, AZ · *Punica granatum*</sub>
+
+**At a glance**
+
+| | |
+|---|---|
+| **Flower detection** | YOLO26-m · mAP@0.5 **0.808** |
+| **Insect detection** | YOLO26-m, 5 classes · mAP@0.5 **0.669** |
+| **What we count** | *feeding visits* (insect on a flower **≥ 2 s**), not frames — occlusion-aware, no double-counting |
+| **The science** | pollinator **lift**, not dependency: self-set 45% → cross-set 68% (bounded +23 pp) |
+| **App** | web upload + dashboard (:8000/:5173) · live DroidCam viewer (:8001) · Gemini/HF assistant |
+
+**Quick start** — run the whole app (backend + frontend + live camera):
+
+```bash
+bash ~/Desktop/run-website.sh     # → http://localhost:5173
+```
+
+**Presentation & Q&A pack:** [`Bee_A_Hero_Presentation_assets/`](Bee_A_Hero_Presentation_assets/) — full technical, algorithmic, scientific and non-technical detail for the pitch and the questioning phase (`COMBINED_Bee_A_Hero.md` is the one-file brief).
 
 ```
 Camera video
@@ -191,6 +214,23 @@ omit missing topics; never speculate on causes (weather, pests, species effectiv
 that exact field is present; always label model estimates as estimates. The model *uses* weather
 as a fitted feature; the report may only *restate* weather the pipeline measured. **Status:**
 prompt + schema designed; scaffolding.
+
+---
+
+## 4.5 Application — web app, live camera & assistant ✅
+
+The pipeline ships behind a full-stack product (`bee-a-hero-app/` + `droidcam-live/`).
+
+**Web app** — FastAPI backend (`:8000`, SQLite, JWT) + React/Vite frontend (`:5173`).
+- **Upload → detect:** a clip runs the **same `count_visits_det` pipeline** as the offline CSVs (one source of truth). The annotated **H.264** video and a real-frame cover are produced during processing and play instantly when done; per-flower stats and a pollination breakdown are shown.
+- **Assistant:** pick **Gemini** or **Hugging Face** per chat (plus Auto / offline mock). Answers are **grounded** in the real CV + ML results and the user's own stats; decoding is deterministic (T = 0.3, top-p = 0.9). Keys live only in the git-ignored `backend/.env`.
+
+**Live camera** (`droidcam-live/`, `:8001`) — real-time MJPEG viewer.
+- Connect a **phone via DroidCam** (paste `http://PHONE_IP:4747/video`) or use the **local webcam** — switchable from the browser, no restart. Phone & PC must share a Wi-Fi subnet.
+- Runs the **trained flower + insect detectors + BoT-SORT** (default now, not generic COCO) with a person-veto and the same FP gates as offline.
+- **Rolling landing log:** as insects land and leave, rows append to `droidcam-live/live_out/live_landings.csv` (+ `.json`) — the same landing data the offline pipeline produces; a bee occluded behind a petal is re-linked so it's counted once.
+
+**One-command launch:** `bash run-website.sh` starts all three services and opens the site.
 
 ---
 
