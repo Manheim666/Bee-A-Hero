@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     droidcam_url: str = "0"
     model_paths: str = _DEFAULT_MODELS
     model_labels: str = "flower,insect" if _FLOWER.exists() else ""
-    conf_threshold: float = 0.35
+    conf_threshold: float = 0.25       # match the upload pipeline (conf 0.20) so live detects too
     img_size: int = 640
     reconnect_delay: float = 3.0
     jpeg_quality: int = 80
@@ -32,7 +32,9 @@ class Settings(BaseSettings):
     person_veto: bool = True
     person_model: str = "yolov8n.pt"    # generic COCO detector, auto-downloaded
     person_conf: float = 0.35
-    max_box_frac: float = 0.22          # reject boxes bigger than this fraction of the frame
+    max_box_frac: float = 0.85          # reject only near-frame-filling blobs (wall/person). A
+                                        #   flower or bee held to the camera is a BIG box -> must
+                                        #   pass, else live detects nothing on close subjects.
 
     # --- flower <-> insect confusion gating --------------------------------------
     # Two independent detectors run per frame; the insect model can fire (e.g. "butterfly")
@@ -40,14 +42,15 @@ class Settings(BaseSettings):
     # a mislabelled flower is a box that basically IS the flower (IoU ~1, similar area). So:
     #  * hold insects to a higher confidence bar than flowers, and
     #  * veto any insect box that overlaps a flower too much / is nearly the flower's size.
-    insect_conf: float = 0.30           # min confidence for an insect box (low -> detect a settled
-                                        #   bee immediately instead of a couple seconds late)
-    flower_conf: float = 0.45           # min confidence for a flower box (higher -> fewer scene FPs)
+    insect_conf: float = 0.20           # match the upload pipeline (low -> detect a settled bee
+                                        #   immediately, and survive the OOD gap on close/live subjects)
+    flower_conf: float = 0.25           # match the upload pipeline (~0.20) so a live flower fires
     insect_flower_iou: float = 0.80     # insect box matching a flower this closely = the whole
                                         #   flower mislabelled; kept high so bees ON a flower survive
-    # flower geometry: a real flower is compact and only part of the frame — not the whole scene.
+    # flower geometry: a real flower is compact -> reject slivers. Cap raised near full-frame so a
+    # flower held close to the camera passes (the live test case), only a scene-sized blob is cut.
     flower_min_frac: float = 0.002      # reject flower boxes smaller than this fraction of the frame
-    flower_max_frac: float = 0.55       # reject flower boxes bigger than this (whole-screen = FP)
+    flower_max_frac: float = 0.92       # reject flower boxes bigger than this (whole-screen = FP)
     flower_max_aspect: float = 3.0      # reject long slivers (aspect above this) -> not a flower
     box_nms_iou: float = 0.55           # merge overlapping same-kind boxes ("flower in a flower")
     box_nms_contain: float = 0.70       # or one box mostly inside another -> keep the stronger
