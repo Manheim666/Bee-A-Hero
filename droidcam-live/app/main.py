@@ -75,10 +75,12 @@ def landings():
 
 def _mjpeg_generator():
     pl = get_pipeline()
-    last_id = 0
+    last_ts = 0.0
     boundary = b"--frame"
     while True:
-        payload, last_id = pl.latest_jpeg(last_seen_id=last_id, timeout=2.0)
+        # Delayed playback: every annotated frame, in order, released ~display_delay_s late so
+        # the feed is smooth at full fps while the pipeline processes the newest frames.
+        payload, last_ts = pl.next_delayed_jpeg(last_ts=last_ts, timeout=2.0)
         if not payload:
             continue
         yield (

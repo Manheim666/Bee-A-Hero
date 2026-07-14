@@ -112,11 +112,55 @@ class _LatestSlot:
             return self._value
 
 
+class _DelayLine:
+    """Time-ordered frame buffer: hold annotated frames and hand them out ~delay seconds late.
+
+    Inference still runs full speed; the viewer just watches the feed a beat behind real time,
+    so playback stays smooth at full frame rate and the pipeline always has the newest frames
+    ready. Frames are stored (timestamp, jpeg) in arrival order; the reader asks for the next
+    frame after ``last_ts`` and gets it once it has aged ``delay``."""
+
+    def __init__(self, maxlen: int) -> None:
+        from collections import deque
+        self._buf = deque(maxlen=maxlen)     # (ts, jpeg_bytes), ascending ts
+        self._cv = threading.Condition()
+
+    def put(self, jpeg: bytes) -> None:
+        with self._cv:
+            self._buf.append((time.time(), jpeg))
+            self._cv.notify_all()
+
+    def get_next(self, last_ts: float, delay: float, timeout: float = 2.0):
+        """Return (ts, jpeg) for the oldest frame newer than last_ts, once it is `delay` old.
+        Blocks up to `timeout`. Returns (last_ts, None) if nothing becomes ready."""
+        with self._cv:
+            deadline = time.time() + timeout
+            while True:
+                nxt = None
+                for ts, data in self._buf:
+                    if ts > last_ts:
+                        nxt = (ts, data)
+                        break
+                if nxt is not None:
+                    age_left = delay - (time.time() - nxt[0])
+                    if age_left <= 0:
+                        return nxt
+                    wait = age_left
+                else:
+                    wait = None                  # nothing newer yet -> wait for a put
+                remaining = deadline - time.time()
+                if remaining <= 0:
+                    return (last_ts, None)
+                self._cv.wait(timeout=min(remaining, wait) if wait is not None else remaining)
+
+
 class Pipeline:
     def __init__(self) -> None:
         self.state = PipelineState()
         self._raw_slot = _LatestSlot()      # np.ndarray BGR
-        self._jpeg_slot = _LatestSlot()     # bytes (encoded JPEG)
+        # Annotated frames go through a delay line: shown ~display_delay_s behind real time so
+        # playback is smooth at full fps (no throttle) while the pipeline works the newest frames.
+        self._delay = _DelayLine(settings.delay_buffer_max)
         self._stop = threading.Event()
         self._threads: list[threading.Thread] = []
         self._models = []
@@ -287,7 +331,6 @@ class Pipeline:
         window_start = time.time()
 
         while not self._stop.is_set():
-            loop_start = time.time()
             frame = self._raw_slot.take_new(last_seen_id=last_id, timeout=1.0)
             if frame is None:
                 continue
@@ -308,7 +351,7 @@ class Pipeline:
             )
             if not ok:
                 continue
-            self._jpeg_slot.put(buf.tobytes())
+            self._delay.put(buf.tobytes())
 
             # Update per-frame stats.
             self.state.detection_count = len(dets)
@@ -324,13 +367,6 @@ class Pipeline:
                 self.state.inference_fps = infer_count / (now - window_start)
                 infer_count = 0
                 window_start = now
-
-            # Pace the loop: hold a steady processing cadence so the model gets a full pass per
-            # frame and the tracker keeps IDs, instead of racing the capture thread. Sleep only
-            # the time left in this frame's budget (0 if inference already took longer).
-            spare = settings.min_frame_interval - (time.time() - loop_start)
-            if spare > 0:
-                time.sleep(spare)
 
     def _person_boxes(self, frame: np.ndarray) -> list[tuple[int, int, int, int]]:
         """COCO person boxes for the veto (empty if the veto model is off/unavailable)."""
@@ -589,11 +625,13 @@ class Pipeline:
         return snap
 
     # ------------------------------------------------------------------ read
-    def latest_jpeg(self, last_seen_id: int, timeout: float = 1.0) -> tuple[bytes, int]:
-        payload = self._jpeg_slot.take_new(last_seen_id=last_seen_id, timeout=timeout)
-        if payload is None:
-            return b"", last_seen_id
-        return payload, id(payload)
+    def next_delayed_jpeg(self, last_ts: float, timeout: float = 2.0) -> tuple[bytes, float]:
+        """Next annotated frame after last_ts, released once it is display_delay_s old.
+        Returns (jpeg, ts); (b"", last_ts) if none became ready within timeout."""
+        ts, data = self._delay.get_next(last_ts, settings.display_delay_s, timeout)
+        if data is None:
+            return b"", last_ts
+        return data, ts
 
 
 pipeline: Pipeline | None = None

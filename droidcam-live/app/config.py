@@ -25,18 +25,22 @@ class Settings(BaseSettings):
     jpeg_quality: int = 80
     device: str = "cpu"
 
-    # --- processing pace ("add delay so the model can work better") ---------------
-    # Cap the inference rate: after each processed frame, wait so at most 1/min_frame_interval
-    # frames/sec are run. A slower, steady cadence gives the model a full pass per frame and lets
-    # BoT-SORT hold IDs (no racing/dropping), and it steadies the landing-dwell clock. Raise for
-    # more delay (calmer, better locks), lower for more responsiveness.
-    min_frame_interval: float = 0.20   # ~5 fps processed (env: MIN_FRAME_INTERVAL)
+    # --- display delay buffer ("show delayed video, don't drop fps") --------------
+    # Do NOT throttle inference. Instead play the annotated feed a short time BEHIND real time:
+    # frames queue up and the viewer watches ~display_delay_s ago while the pipeline works the
+    # newest frames. This absorbs inference-time jitter so playback stays smooth at full frame
+    # rate, and gives the model a head start (the "next second is getting ready" cushion).
+    display_delay_s: float = 1.0       # seconds the shown feed lags real time (env: DISPLAY_DELAY_S)
+    delay_buffer_max: int = 300        # cap buffered annotated frames (bounds memory/latency)
 
     # --- false-positive gating (humans OOD -> misread as flower/insect) ----------
     # YOLO is closed-set: a person has no class, so it snaps onto flower/insect. Veto
     # any detection that overlaps a COCO person box, and drop any box too big to be a
     # real flower/insect (a real one is small; a frame-filling box is a wall/person/FP).
-    person_veto: bool = True
+    # OFF by default: the veto killed any detection whose CENTRE fell inside a COCO person box,
+    # so a flower/bee HELD IN HAND (hand/arm in frame -> person box over the subject) vanished
+    # every frame and never came back. The size-veto (max_box_frac) still cuts wall-sized blobs.
+    person_veto: bool = False
     person_model: str = "yolov8n.pt"    # generic COCO detector, auto-downloaded
     person_conf: float = 0.35
     max_box_frac: float = 0.85          # reject only near-frame-filling blobs (wall/person). A
