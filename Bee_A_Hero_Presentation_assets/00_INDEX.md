@@ -20,8 +20,17 @@
 | `06_WebApp_and_LiveCamera.md` | Full-stack | Upload flow, dashboard, live DroidCam + rolling landing log |
 | `07_Architecture_Deployment.md` | Systems | Services, Docker, ports, security, data flow |
 | `08_Metrics_and_Evaluation.md` | Rigor | Metric per stage, targets, how we know it works |
-| `09_QA_Anticipated_Questions.md` | **Everyone** | The question bank with model answers (incl. the traps) |
+| `09_QA_Anticipated_Questions.md` | **Everyone** | The question bank — technical **+ business/jury** — with model answers |
+| `10_PRESENTATION_SCRIPT.md` | **Everyone** | ⭐ The clear path: narrative arc, 4-speaker timing, demo choreography, Q&A routing, checklist |
+| `11_RUBRIC_ALIGNMENT_and_Creative.md` | **Everyone** | ⭐ How we hit 9–10 on every jury criterion + creative hooks + special-mention strategy |
 | `COMBINED_Bee_A_Hero.md` | — | One compact file with the whole story |
+
+## How this pack scores full marks (jury = 30% of grade)
+Jury 40 pts = **Clarity /10 · Delivery /10 · Problem /10 · Solution /10**. Winner = `(Technical/100)×0.7 + (Jury/40)×0.3`.
+- **Clarity & Delivery** → `10_PRESENTATION_SCRIPT.md` (one arc, timed, all 4 speak, demo backup, Q&A routing).
+- **Problem & Solution** → `01_Problem_and_Vision.md` (specific, evidence-backed) + the honest **trade-offs/limits** that unlock Excellent (`11_…` Part A.4).
+- **Special-mention votes** (student + jury) → the creative hooks + one-liner in `11_…` Parts B–C.
+Read `10` and `11` first — they turn the technical files into a winning pitch.
 
 ## Headline numbers to have on the tip of your tongue
 
