@@ -2,11 +2,23 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Repo root (…/Bee-A-Hero) from …/droidcam-live/app/config.py, so the trained detectors are the
+# built-in default no matter how the viewer is launched.
+_REPO = Path(__file__).resolve().parents[2]
+_FLOWER = _REPO / "data/interim/cv_runs/flower_det2_v2_yolo26m/weights/best.pt"
+_INSECT = _REPO / "data/interim/cv_runs/insect_multidet_v2_yolo26m/weights/best.pt"
+_DEFAULT_MODELS = (
+    f"{_FLOWER},{_INSECT}" if _FLOWER.exists() and _INSECT.exists() else "yolov8n.pt"
+)
+
 
 class Settings(BaseSettings):
-    droidcam_url: str = "http://192.168.1.100:4747/video"
-    model_paths: str = "yolov8n.pt"
-    model_labels: str = ""
+    # Default to the LOCAL WEBCAM (index 0) so the live viewer works out of the box; switch to a
+    # phone's DroidCam URL from the browser. Default to the TRAINED flower+insect detectors, not
+    # generic COCO yolov8n, so the camera actually detects flowers and insects.
+    droidcam_url: str = "0"
+    model_paths: str = _DEFAULT_MODELS
+    model_labels: str = "flower,insect" if _FLOWER.exists() else ""
     conf_threshold: float = 0.35
     img_size: int = 640
     reconnect_delay: float = 3.0
