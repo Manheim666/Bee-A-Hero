@@ -25,14 +25,6 @@ class Settings(BaseSettings):
     jpeg_quality: int = 80
     device: str = "cpu"
 
-    # --- display delay buffer ("show delayed video, don't drop fps") --------------
-    # Do NOT throttle inference. Instead play the annotated feed a short time BEHIND real time:
-    # frames queue up and the viewer watches ~display_delay_s ago while the pipeline works the
-    # newest frames. This absorbs inference-time jitter so playback stays smooth at full frame
-    # rate, and gives the model a head start (the "next second is getting ready" cushion).
-    display_delay_s: float = 1.0       # seconds the shown feed lags real time (env: DISPLAY_DELAY_S)
-    delay_buffer_max: int = 300        # cap buffered annotated frames (bounds memory/latency)
-
     # --- false-positive gating (humans OOD -> misread as flower/insect) ----------
     # YOLO is closed-set: a person has no class, so it snaps onto flower/insect. Veto
     # any detection that overlaps a COCO person box, and drop any box too big to be a
