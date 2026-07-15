@@ -145,27 +145,3 @@ bee-a-hero-app/
       components/  NavBar StatTile VideoCard Hexagon
                    VisitBarChart FilterBar ChatSidebar ChatWindow
 ```
-
-## Troubleshooting
-
-**"Annotation failed: No YOLO models available for annotation"** (or the live camera doesn't
-detect). The backend couldn't load the detectors. Two causes — the error message now tells you
-which one:
-
-1. **CV dependencies not installed** (most common on a fresh clone / a teammate's laptop).
-   `requirements.txt` does **not** include torch/ultralytics — they are heavy and live in a
-   separate file so you can pick the CPU or GPU build. Install them:
-   ```bash
-   pip install -r bee-a-hero-app/backend/requirements-cv.txt   # torch + ultralytics + opencv
-   # CPU-only machine:
-   pip install --extra-index-url https://download.pytorch.org/whl/cpu -r bee-a-hero-app/backend/requirements-cv.txt
-   ```
-   then restart the backend. (The trained `.pt` weights are committed in the repo — no Git LFS,
-   no extra download.)
-
-2. **Stale server process** — the backend was left running while the GPU was busy (e.g. an
-   overnight training run), poisoning its CUDA/torch state. Just **restart the services**
-   (re-run `run-website.sh`); a fresh process reloads the weights cleanly. Don't run training on
-   the same GPU while the app is serving.
-
-The exact load error is logged by the annotator, so check the backend log if it persists.
