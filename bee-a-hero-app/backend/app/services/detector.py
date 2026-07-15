@@ -78,6 +78,7 @@ def _run_real(video_path: str) -> dict:
     summary = count_visits_det(
         str(video_path), str(_FLOWER_W), str(_INSECT_W), _CV_OUT,
         honeybee_weights=honeybee, on_landing=rows.append, save_video=True,
+        person_veto_iou=0.55,   # drop humans misread as flower/insect (IoU-based; held objects kept)
     )
     try:
         vp = Path(video_path)

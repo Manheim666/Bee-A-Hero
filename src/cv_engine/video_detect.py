@@ -109,8 +109,10 @@ INSECT_FLOWER_IOU = 0.80  # an insect box matching a flower box this closely IS 
 INSECT_MAX_ASPECT = 4.0   # insect box longer:shorter side above this = a sliver/edge, not an insect
 FLOWER_MAX_ASPECT = 3.0   # flower box aspect above this = a sliver/random object, not a flower
 MIN_BOX_FRAC = 0.0006     # any box smaller than this fraction of the frame = noise -> reject
-MAX_FLOWER_FRAC = 0.50    # a flower covering more than half the frame is background (wall/greenery
-                          #   /whole scene), not a flower -> reject
+MAX_FLOWER_FRAC = 0.90    # reject only a near-frame-filling box (whole-scene greenery/wall). A
+                          #   flower shot close to the camera legitimately fills most of the frame,
+                          #   so keep it -> matches the live viewer's flower_max_frac (0.92) and
+                          #   stops close-up upload clips returning 0 flowers / 0 visits.
 FLOWER_NMS_IOU = 0.45     # two flower boxes overlapping this much are one flower -> keep one
                           #   (kills "2 flowers for 1" and boxes stacked on the same bloom)
 FLOWER_MERGE_K = 1.6      # canonicalise flowers by CENTRE distance (robust to box-size jitter):
@@ -174,6 +176,14 @@ CONCURRENT_MERGE_IOU = 0.45   # two tracks that co-exist on the same frames and 
                               #   are one insect with two BoT-SORT ids -> merge (no duplicate box)
 DRAW_NMS_IOU = 0.45           # at draw time, never show two insect boxes overlapping more than this
                               #   -> kills "multiple bboxes" on one bug in the annotated video
+
+
+def _person_veto(box, persons, iou_thr) -> bool:
+    """True if `box` coincides with a COCO person box (IoU >= iou_thr) -> a human misread as a
+    flower/insect. IoU-based (not containment) so a small object held by a person is kept."""
+    if not persons:
+        return False
+    return any(_iou_box(box, p) >= iou_thr for p in persons)
 
 
 def _box_area(box):
@@ -476,7 +486,7 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
                      conf=0.20, flower_conf=0.20, save_video=False,
                      flower_interval=5, target_fps=TARGET_FPS,
                      honeybee_weights="", on_landing=None, live=False,
-                     insect_imgsz=768) -> dict:
+                     insect_imgsz=768, person_veto_iou=0.0) -> dict:
     """Detect+track insects on flowers and emit landing-level pollination data.
 
     Two-pass: track+collect, then stitch drop-out-split tracks into unified tracks (so one
@@ -491,6 +501,14 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
     vid_dir.mkdir(exist_ok=True); csv_dir.mkdir(exist_ok=True)
     flower_model, insect_model = YOLO(flower_weights), YOLO(insect_weights)
     names = insect_model.names                                 # {cls_id: type}
+    # Optional COCO person veto (web path): drop flower/insect boxes that ARE a human. Off for
+    # CLI (person_veto_iou=0) so offline test_video_result reproduction is byte-identical.
+    person_model = None
+    if person_veto_iou and person_veto_iou > 0:
+        try:
+            person_model = YOLO("yolov8n.pt")                  # auto-downloads if absent
+        except Exception:
+            person_model = None
     subclf = Classifier(honeybee_weights) if honeybee_weights else None  # bee -> honeybee/bee
 
     in_fps = cv2.VideoCapture(str(video)).get(cv2.CAP_PROP_FPS) or 30.0
@@ -518,8 +536,16 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
         frame = res.orig_img
         H, W = frame.shape[:2]
         frame_diag = (W * W + H * H) ** 0.5
+        persons = []
+        if person_model is not None:
+            for pr in person_model.predict(frame, conf=0.35, classes=[0], verbose=False):
+                if pr.boxes is None:
+                    continue
+                for pb in pr.boxes.xyxy.cpu().numpy():
+                    persons.append(tuple(float(v) for v in pb))
         flowers = ftracker.update(frame) if fi % flower_interval == 0 else ftracker.current()
         flowers = [(fid, fb) for fid, fb in flowers if _plausible_flower(fb, W * H)]
+        flowers = [(fid, fb) for fid, fb in flowers if not _person_veto(fb, persons, person_veto_iou)]
         flowers = flower_persist.update(flowers, fi)          # hold + average -> no flicker/disappear
         flowers_by_fi[fi] = list(flowers)
         n_frames = fi + 1
@@ -535,6 +561,8 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
             if (box[2] - box[0]) * (box[3] - box[1]) > MAX_INSECT_FRAME_FRAC * W * H:
                 continue                                       # box too big to be an insect -> FP
             box = tuple(float(v) for v in box)
+            if _person_veto(box, persons, person_veto_iou):
+                continue                                       # a human mislabelled as an insect
             if _is_flower_box(box, flowers):
                 continue                                       # a flower mislabelled as an insect
             if not _plausible_insect(box):
