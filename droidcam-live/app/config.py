@@ -20,7 +20,8 @@ class Settings(BaseSettings):
     model_paths: str = _DEFAULT_MODELS
     model_labels: str = "flower,insect" if _FLOWER.exists() else ""
     conf_threshold: float = 0.25       # match the upload pipeline (conf 0.20) so live detects too
-    img_size: int = 640
+    img_size: int = 768                # match the detectors' train size -> better small-bee recall
+                                       #   than 640, still real-time on CPU for the live feed
     reconnect_delay: float = 3.0
     jpeg_quality: int = 80
     device: str = "cpu"
