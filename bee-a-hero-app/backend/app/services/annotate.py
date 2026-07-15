@@ -144,11 +144,20 @@ def annotate_video(
 
     models = _resolve_models()
     if not models:
-        raise RuntimeError(
-            "No YOLO models available for annotation — see backend log for the load error. "
-            "Most often the server process was started/left running while the GPU was busy "
-            "(e.g. training); restart it (re-run run-website.sh)."
-        )
+        try:
+            import ultralytics  # noqa: F401
+            reason = (
+                "the trained weights failed to load — see the backend log for the exact error. "
+                "If the server was left running while the GPU was busy (e.g. training), restart "
+                "it (re-run run-website.sh)."
+            )
+        except Exception:
+            reason = (
+                "the CV dependencies are not installed in this environment. Install them: "
+                "pip install -r bee-a-hero-app/backend/requirements-cv.txt "
+                "(torch + ultralytics + opencv), then restart the backend."
+            )
+        raise RuntimeError(f"No YOLO models available for annotation — {reason}")
 
     cap = cv2.VideoCapture(str(src))
     if not cap.isOpened():
