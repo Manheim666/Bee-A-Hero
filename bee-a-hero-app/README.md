@@ -145,3 +145,15 @@ bee-a-hero-app/
       components/  NavBar StatTile VideoCard Hexagon
                    VisitBarChart FilterBar ChatSidebar ChatWindow
 ```
+
+## Troubleshooting
+
+**"Annotation failed: No YOLO models available for annotation"** (or the live camera stops
+detecting). The backend/live process couldn't load the detectors — almost always because the
+server process was left running while the GPU was busy (e.g. an overnight training run), which
+poisons that process's CUDA/torch state. The weights and code are fine.
+
+Fix: **restart the services** — re-run `run-website.sh` (or restart the backend :8000 and live
+:8001 uvicorn processes). A fresh process reloads the weights cleanly. The exact load error is
+now logged by the annotator, so check the backend log if it persists. Don't run model training
+on the same GPU while the app is serving.
