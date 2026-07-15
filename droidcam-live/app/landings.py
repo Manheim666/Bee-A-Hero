@@ -63,6 +63,16 @@ def _contains(box, pt):
     return box[0] <= pt[0] <= box[2] and box[1] <= pt[1] <= box[3]
 
 
+# Inflate a flower box by this fraction ONLY when testing if an insect is 'on' it, so an insect on
+# a petal edge still counts as a landing (the flower is still detected/drawn on its true box).
+FLOWER_TOUCH_PAD = 0.15
+
+
+def _pad(box, frac=FLOWER_TOUCH_PAD):
+    w, h = (box[2] - box[0]) * frac, (box[3] - box[1]) * frac
+    return (box[0] - w, box[1] - h, box[2] + w, box[3] + h)
+
+
 class FlowerRegistry:
     """Sticky-id flower boxes that cumulatively-average, so a static flower box is steady.
 
@@ -183,7 +193,7 @@ class LandingLogger:
             # (Previously a slow insect with no flower under it opened a synthetic "flower_unk"
             #  episode -> insects noted on flowers that were not there.) No flower under it =>
             #  not a landing, even if it is motionless.
-            cur = next((fid for fid, fb in flowers if _contains(fb, cen)), None)
+            cur = next((fid for fid, fb in flowers if _contains(_pad(fb), cen)), None)
             if cur is not None:
                 ep = sub["ep"]
                 if ep is None:
