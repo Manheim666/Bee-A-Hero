@@ -91,6 +91,9 @@ RELINK_RADIUS_K = 4.0     #   ... and within RELINK_RADIUS_K * sqrt(area) of the
 # --- flower persistence (flowers are static -> hold + cumulatively average boxes) ---
 FLOWER_BOX_EMA = 0.85     # heavy EMA on a flower's box: a static flower's position is a running
                           #   (cumulative) average of its detections -> a rock-steady box.
+FLOWER_TOUCH_PAD = 0.15   # inflate a flower box by this fraction ONLY when testing if an insect is
+                          #   'on' it -> an insect on a petal edge still counts as a landing, while
+                          #   the flower is detected/gated/drawn on its true (tight) box
 FLOWER_HOLD_S = 0.8       # bridge a couple of MISSED detections so a static flower's box doesn't
                           #   flicker -- but drop it promptly once the flower is truly gone (no
                           #   multi-second "ghost" box lingering after the flower leaves).
@@ -184,6 +187,14 @@ def _person_veto(box, persons, iou_thr) -> bool:
     if not persons:
         return False
     return any(_iou_box(box, p) >= iou_thr for p in persons)
+
+
+def _pad_box(box, frac):
+    """Expand a box by `frac` of its size on each side. Used ONLY to test whether an insect is
+    'on' a flower — the flower is detected/drawn on its true (tight) box, but an insect crawling
+    on a petal edge has its centre just outside that box, so containment uses a padded copy."""
+    w, h = (box[2] - box[0]) * frac, (box[3] - box[1]) * frac
+    return (box[0] - w, box[1] - h, box[2] + w, box[3] + h)
 
 
 def _box_area(box):
@@ -615,7 +626,7 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
             # (Dropped the old "or stationary" branch: a motionless bee with no flower under it
             #  used to mint a synthetic flower_unk -> a bee auto-assuming a flower that isn't
             #  there. No flower detected => no landing, no phantom flower.)
-            cur = next((fid for fid, fb in flowers if _in(fb, cen)), None)
+            cur = next((fid for fid, fb in flowers if _in(_pad_box(fb, FLOWER_TOUCH_PAD), cen)), None)
             conf_here = det.get(fi, (None, 0.0, None))[1]
             if cur is not None:
                 if ep is None:

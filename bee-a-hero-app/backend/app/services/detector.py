@@ -77,6 +77,8 @@ def _run_real(video_path: str) -> dict:
     # of truth). Move it next to the upload where the player streams it from.
     summary = count_visits_det(
         str(video_path), str(_FLOWER_W), str(_INSECT_W), _CV_OUT,
+        conf=0.25, flower_conf=0.15,   # canonical settings that produced test_video_result -> the
+                                       #   website's numbers match the offline CSVs for the same clip
         honeybee_weights=honeybee, on_landing=rows.append, save_video=True,
         person_veto_iou=0.55,   # drop humans misread as flower/insect (IoU-based; held objects kept)
     )

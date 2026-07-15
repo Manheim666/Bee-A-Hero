@@ -77,7 +77,11 @@ def _iou(a, b):
     return inter / ua if ua > 0 else 0.0
 
 
-def _detect_flowers_raw(model, frame, conf, dilate=0.15):
+def _detect_flowers_raw(model, frame, conf, dilate=0.0):
+    """Raw flower boxes. ``dilate`` pads each box (fraction of its size). Default 0: padding a
+    large close-up flower inflated it to the whole frame, which the MAX_FLOWER_FRAC plausibility
+    gate then rejected -> such videos silently counted 0 flowers/landings. Gate and draw on the
+    true detector box (what the live path already does)."""
     res = model.predict(frame, conf=conf, verbose=False)[0]
     H, W = frame.shape[:2]
     out = []
@@ -107,7 +111,7 @@ class FlowerTracker:
     the box stops being drawn. ``seen`` records every flower ID ever assigned.
     """
 
-    def __init__(self, model, conf, dilate=0.15, iou_thr=0.3, max_missed=45,
+    def __init__(self, model, conf, dilate=0.0, iou_thr=0.3, max_missed=45,
                  smooth=0.5, hold=6):
         self.model, self.conf, self.dilate = model, conf, dilate
         self.iou_thr, self.max_missed = iou_thr, max_missed
