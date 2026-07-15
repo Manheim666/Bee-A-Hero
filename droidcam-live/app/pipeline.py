@@ -431,12 +431,27 @@ class Pipeline:
 
     @staticmethod
     def _vetoed(box, persons, frame_area: float) -> bool:
-        """True if `box` is too big to be a flower/insect, or its centre sits in a person."""
+        """True if `box` is too big to be a flower/insect, or its box basically IS a person.
+
+        Person test is IoU-based, not centre-in-person: a detection is vetoed only when it
+        overlaps a person box by >= ``person_veto_iou`` (the box ~ the whole person -> a human
+        misread as flower/insect). A small object HELD by a person is a small box inside a big
+        person box -> low IoU -> kept, so close-up demo subjects (flower/bee in hand) survive."""
         x1, y1, x2, y2 = box
-        if (x2 - x1) * (y2 - y1) > settings.max_box_frac * frame_area:
+        ba = (x2 - x1) * (y2 - y1)
+        if ba > settings.max_box_frac * frame_area:
             return True                        # frame-filling blob -> wall/person/FP
-        cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-        return any(px1 <= cx <= px2 and py1 <= cy <= py2 for px1, py1, px2, py2 in persons)
+        ba = max(1.0, ba)
+        for px1, py1, px2, py2 in persons:
+            ox1, oy1 = max(x1, px1), max(y1, py1)
+            ox2, oy2 = min(x2, px2), min(y2, py2)
+            inter = max(0.0, ox2 - ox1) * max(0.0, oy2 - oy1)
+            if inter <= 0:
+                continue
+            pa = max(1.0, (px2 - px1) * (py2 - py1))
+            if inter / (ba + pa - inter) >= settings.person_veto_iou:
+                return True                    # box coincides with a person -> human FP
+        return False
 
     def _run_inference(self, frame: np.ndarray) -> tuple[np.ndarray, list[Detection]]:
         if self._landing_logger is not None:

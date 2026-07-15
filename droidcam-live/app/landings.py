@@ -64,17 +64,25 @@ def _contains(box, pt):
 
 
 class FlowerRegistry:
-    """Sticky-id flower boxes that hold + cumulatively-average, so a static flower never flickers.
+    """Sticky-id flower boxes that cumulatively-average, so a static flower box is steady.
 
-    Each flower's box is a heavy EMA (running average) of its detections; a flower is kept for
-    ``forget_s`` after its last detection and returned every frame in between, so a missed
-    detection leaves the box in place instead of dropping it."""
+    Each flower's box is a heavy EMA (running average) of its detections. Two guards keep the
+    drawn box honest against a live feed:
+      * ``min_hits`` -- a flower must be detected on at least this many frames before it is
+        emitted for drawing, so a single-frame false positive (e.g. the flower model firing on
+        a passing insect/hand) never flashes a "flower out of nowhere".
+      * ``forget_s`` -- a flower is dropped this many seconds after its last detection. Kept
+        SHORT (just enough to bridge one dropped frame) so the box vanishes when the flower
+        leaves the frame instead of lingering for several seconds."""
 
-    def __init__(self, iou_thresh: float = 0.3, forget_s: float = 0.8, ema: float = 0.85) -> None:
+    def __init__(self, iou_thresh: float = 0.3, forget_s: float = 0.60, ema: float = 0.85,
+                 min_hits: int = 2, memory_s: float = 1.5) -> None:
         self._iou = iou_thresh
-        self._forget = forget_s
-        self._ema = ema
-        self._flowers: dict[str, dict] = {}   # fid -> {"box":.., "last_t":..}
+        self._forget = forget_s          # stop DRAWING the box this long after its last detection
+        self._memory = max(memory_s, forget_s)  # keep the record (hit count) this long, so a
+        self._ema = ema                  #   flickering-but-present flower still reaches min_hits
+        self._min_hits = min_hits        # frames a flower must be seen before it is drawn (kills a
+        self._flowers: dict[str, dict] = {}   # 1-frame false positive) -> fid -> box/last_t/hits
         self._next = 1
 
     def update(self, boxes: list, t_s: float) -> list:
@@ -90,21 +98,26 @@ class FlowerRegistry:
             if best is None:
                 best = f"flower_{self._next}"
                 self._next += 1
-                self._flowers[best] = {"box": tuple(map(float, box)), "last_t": t_s}
+                self._flowers[best] = {"box": tuple(map(float, box)), "last_t": t_s, "hits": 1}
             else:                              # cumulative average -> rock-steady box
                 ob = self._flowers[best]["box"]
                 self._flowers[best] = {
                     "box": tuple(self._ema * o + (1 - self._ema) * n for o, n in zip(ob, box)),
                     "last_t": t_s,
+                    "hits": self._flowers[best]["hits"] + 1,
                 }
             used.add(best)
-        # return ALL non-expired flowers (held between detections -> no disappearance)
+        # Prune only after the (longer) memory window so a flower that flickers across frames keeps
+        # accumulating hits and reaches min_hits. Emit for DRAWING only while both fresh (<= forget,
+        # so the box vanishes quickly once the flower truly leaves) and confirmed (>= min_hits).
         out = []
         for fid, v in list(self._flowers.items()):
-            if t_s - v["last_t"] > self._forget:
+            age = t_s - v["last_t"]
+            if age > self._memory:
                 del self._flowers[fid]
                 continue
-            out.append((fid, v["box"]))
+            if age <= self._forget and v["hits"] >= self._min_hits:
+                out.append((fid, v["box"]))
         return out
 
 
