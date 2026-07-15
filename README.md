@@ -21,13 +21,21 @@ webcam), and a reproducible **CV/ML pipeline**.
 | **The science** | pollinator **lift**, not dependency: self-set 45% → cross-set 68% (bounded +23 pp) |
 | **App** | web upload + dashboard (:8000/:5173) · live DroidCam viewer (:8001) · Gemini/HF assistant |
 
-**Quick start** — run the whole app (backend + frontend + live camera):
+**Quick start** — run the web app (backend + frontend):
 
 ```bash
-bash ~/Desktop/run-website.sh     # → http://localhost:5173
+bash bee-a-hero-app/start.sh      # → http://localhost:5173  (login: demo@bee.dev / beehero123)
 ```
 
-**Presentation & Q&A pack:** [`Bee_A_Hero_Presentation_assets/`](Bee_A_Hero_Presentation_assets/) — full technical, algorithmic, scientific and non-technical detail for the pitch and the questioning phase (`COMBINED_Bee_A_Hero.md` is the one-file brief).
+The live camera viewer is a separate service:
+
+```bash
+bash droidcam-live/start.sh       # → http://localhost:8001
+```
+
+> Real detection needs the CV deps (`torch`, `ultralytics`, `opencv`). Install them into the
+> backend venv once — `pip install --extra-index-url https://download.pytorch.org/whl/cpu -r
+> bee-a-hero-app/backend/requirements-cv.txt` — otherwise upload falls back to mock numbers.
 
 ```
 Camera video
@@ -230,7 +238,8 @@ The pipeline ships behind a full-stack product (`bee-a-hero-app/` + `droidcam-li
 - Runs the **trained flower + insect detectors + BoT-SORT** (default now, not generic COCO) with a person-veto and the same FP gates as offline.
 - **Rolling landing log:** as insects land and leave, rows append to `droidcam-live/live_out/live_landings.csv` (+ `.json`) — the same landing data the offline pipeline produces; a bee occluded behind a petal is re-linked so it's counted once.
 
-**One-command launch:** `bash run-website.sh` starts all three services and opens the site.
+**Launch:** `bash bee-a-hero-app/start.sh` (web app, `:8000` + `:5173`) and, for the live camera,
+`bash droidcam-live/start.sh` (`:8001`).
 
 ---
 
