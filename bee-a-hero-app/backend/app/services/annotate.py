@@ -57,21 +57,40 @@ class LoadedModel:
     model: object
 
 
+# Loaded once and reused: reloading a 44 MB model on every request is wasteful, and a
+# successful load persists even if a later call hits a transient GPU/env hiccup.
+_MODEL_CACHE: list[LoadedModel] | None = None
+
+
 def _resolve_models() -> list[LoadedModel]:
+    global _MODEL_CACHE
+    if _MODEL_CACHE:
+        return _MODEL_CACHE
+
     try:
         from ultralytics import YOLO
     except Exception as exc:  # pragma: no cover
-        log.error("ultralytics not available: %s", exc)
+        log.error("Annotator: ultralytics import failed (%r) — no annotation possible", exc)
         return []
 
     loaded: list[LoadedModel] = []
     for tag, path in DEFAULT_MODEL_CANDIDATES:
-        if path.exists():
-            log.info("Annotator loading %s: %s", tag, path)
+        if not path.exists():
+            log.warning("Annotator: weights missing for %s: %s", tag, path)
+            continue
+        try:
             loaded.append(LoadedModel(tag=tag, model=YOLO(str(path))))
+            log.info("Annotator loaded %s: %s", tag, path)
+        except Exception as exc:            # surface the REAL reason instead of a blank list
+            log.error("Annotator: failed to load %s from %s: %r", tag, path, exc)
     if not loaded:
         log.info("Annotator falling back to yolov8n.pt (generic COCO)")
-        loaded.append(LoadedModel(tag="", model=YOLO("yolov8n.pt")))
+        try:
+            loaded.append(LoadedModel(tag="", model=YOLO("yolov8n.pt")))
+        except Exception as exc:
+            log.error("Annotator: fallback yolov8n load failed: %r", exc)
+
+    _MODEL_CACHE = loaded or None           # cache only a real result; retry next call if empty
     return loaded
 
 
@@ -125,7 +144,11 @@ def annotate_video(
 
     models = _resolve_models()
     if not models:
-        raise RuntimeError("No YOLO models available for annotation")
+        raise RuntimeError(
+            "No YOLO models available for annotation — see backend log for the load error. "
+            "Most often the server process was started/left running while the GPU was busy "
+            "(e.g. training); restart it (re-run run-website.sh)."
+        )
 
     cap = cv2.VideoCapture(str(src))
     if not cap.isOpened():
