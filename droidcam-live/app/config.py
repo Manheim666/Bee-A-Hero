@@ -33,9 +33,16 @@ class Settings(BaseSettings):
     # OFF by default: the veto killed any detection whose CENTRE fell inside a COCO person box,
     # so a flower/bee HELD IN HAND (hand/arm in frame -> person box over the subject) vanished
     # every frame and never came back. The size-veto (max_box_frac) still cuts wall-sized blobs.
-    person_veto: bool = False
+    # ON with IoU-based veto (not centre-in-person): a detection is dropped only when its box
+    # basically IS a person box (high IoU) -> a human face/torso misread as flower/insect is cut,
+    # while a flower or bee HELD IN HAND stays (it is a SMALL box inside a big person box -> low
+    # IoU with it), so close-up demo subjects survive. This is why the old centre-in-person veto
+    # was off; the IoU rule fixes humans without killing held subjects.
+    person_veto: bool = True
     person_model: str = "yolov8n.pt"    # generic COCO detector, auto-downloaded
     person_conf: float = 0.35
+    person_veto_iou: float = 0.55       # detection box overlapping a person box this much = the
+                                        #   person mislabelled (not a small object held by them)
     max_box_frac: float = 0.85          # reject only near-frame-filling blobs (wall/person). A
                                         #   flower or bee held to the camera is a BIG box -> must
                                         #   pass, else live detects nothing on close subjects.
