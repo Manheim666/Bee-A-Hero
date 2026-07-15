@@ -91,8 +91,9 @@ RELINK_RADIUS_K = 4.0     #   ... and within RELINK_RADIUS_K * sqrt(area) of the
 # --- flower persistence (flowers are static -> hold + cumulatively average boxes) ---
 FLOWER_BOX_EMA = 0.85     # heavy EMA on a flower's box: a static flower's position is a running
                           #   (cumulative) average of its detections -> a rock-steady box.
-FLOWER_HOLD_S = 8.0       # keep drawing/associating a flower this long after its last detection, so
-                          #   a missed frame never makes the flower box flicker or disappear.
+FLOWER_HOLD_S = 0.8       # bridge a couple of MISSED detections so a static flower's box doesn't
+                          #   flicker -- but drop it promptly once the flower is truly gone (no
+                          #   multi-second "ghost" box lingering after the flower leaves).
 
 # --- drawing ------------------------------------------------------------------
 INSECT_BOX_SMOOTH = 0.6   # EMA on the drawn (interpolated) box -> damps wing-flap size swings
@@ -474,7 +475,8 @@ class FlowerPersistence:
 def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
                      conf=0.20, flower_conf=0.20, save_video=False,
                      flower_interval=5, target_fps=TARGET_FPS,
-                     honeybee_weights="", on_landing=None, live=False) -> dict:
+                     honeybee_weights="", on_landing=None, live=False,
+                     insect_imgsz=768) -> dict:
     """Detect+track insects on flowers and emit landing-level pollination data.
 
     Two-pass: track+collect, then stitch drop-out-split tracks into unified tracks (so one
@@ -506,8 +508,12 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
     flowers_by_fi: dict[int, list] = {}                      # fi -> [(fid, box)] snapshot
     n_frames = 0
     frame_diag = 1.0                                         # set from the first frame's size
+    # Infer at the detector's TRAIN size (768). Measured: inferring above it (1024) actually
+    # dropped detections and over-merged/under-detected, and 640 over-fragmented one bee into
+    # many track ids; 768 gives the cleanest tracks -> most accurate visit counts. Settable arg.
     stream = insect_model.track(source=video, stream=True, tracker="botsort.yaml",
-                                persist=True, conf=conf, verbose=False, vid_stride=stride)
+                                persist=True, conf=conf, imgsz=insect_imgsz,
+                                verbose=False, vid_stride=stride)
     for fi, res in enumerate(stream):
         frame = res.orig_img
         H, W = frame.shape[:2]
@@ -577,24 +583,21 @@ def count_visits_det(video, flower_weights, insect_weights, out_dir: Path,
             flowers = flowers_by_fi.get(fi, [])
             s_norm = 0.0 if prev_c is None else _speed_norm(prev_c, prev_t, cen, t_s, area)
             prev_c, prev_t = cen, t_s
+            # A landing is ONLY an insect whose centre is inside a REAL detected flower box.
+            # (Dropped the old "or stationary" branch: a motionless bee with no flower under it
+            #  used to mint a synthetic flower_unk -> a bee auto-assuming a flower that isn't
+            #  there. No flower detected => no landing, no phantom flower.)
             cur = next((fid for fid, fb in flowers if _in(fb, cen)), None)
-            settled = cur is not None or s_norm < STATIONARY_TAU
             conf_here = det.get(fi, (None, 0.0, None))[1]
-            if settled:
-                if cur is not None:
-                    fid_use, det_kind = cur, "detected"
-                else:
-                    fid_use, next_unk = _attribute_flower(cen, area, flowers, unk_reg, next_unk)
-                    det_kind = "inferred"
+            if cur is not None:
                 if ep is None:
-                    ep = {"flower": fid_use, "enter_t": t_s, "last_t": t_s,
-                          "detected": det_kind, "conf_sum": conf_here, "conf_n": 1,
+                    ep = {"flower": cur, "enter_t": t_s, "last_t": t_s,
+                          "detected": "detected", "conf_sum": conf_here, "conf_n": 1,
                           "last_fi": fi}
                 else:
                     ep["last_t"] = t_s; ep["last_fi"] = fi
                     ep["conf_sum"] += conf_here; ep["conf_n"] += 1
-                    if det_kind == "detected" and ep["detected"] == "inferred":
-                        ep["detected"] = "detected"; ep["flower"] = fid_use
+                    ep["flower"] = cur                 # follow the flower the insect is on
             else:
                 if ep is not None and t_s - ep["last_t"] > LAND_GRACE_S:
                     _emit_landing(landings, flower_events, ep, uid, typ, is_hb, live, on_landing, vid_stem)

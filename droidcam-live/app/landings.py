@@ -70,7 +70,7 @@ class FlowerRegistry:
     ``forget_s`` after its last detection and returned every frame in between, so a missed
     detection leaves the box in place instead of dropping it."""
 
-    def __init__(self, iou_thresh: float = 0.3, forget_s: float = 8.0, ema: float = 0.85) -> None:
+    def __init__(self, iou_thresh: float = 0.3, forget_s: float = 0.8, ema: float = 0.85) -> None:
         self._iou = iou_thresh
         self._forget = forget_s
         self._ema = ema
